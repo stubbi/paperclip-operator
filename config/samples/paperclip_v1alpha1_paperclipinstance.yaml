@@ -1,0 +1,75 @@
+apiVersion: paperclip.paperclip.ai/v1alpha1
+kind: PaperclipInstance
+metadata:
+  name: my-paperclip
+  namespace: default
+spec:
+  image:
+    repository: ghcr.io/paperclipai/paperclip
+    tag: latest
+
+  deployment:
+    mode: authenticated
+    exposure: private
+
+  database:
+    mode: managed
+    managed:
+      storageSize: 10Gi
+
+  auth:
+    secretRef:
+      name: paperclip-auth
+      key: BETTER_AUTH_SECRET
+
+  storage:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+  heartbeat:
+    enabled: true
+    intervalMS: 60000
+
+  adapters:
+    apiKeysSecretRef:
+      name: paperclip-api-keys
+
+  security:
+    networkPolicy:
+      enabled: true
+    rbac:
+      create: true
+
+  networking:
+    service:
+      type: ClusterIP
+      port: 3100
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+---
+# Required secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paperclip-auth
+  namespace: default
+type: Opaque
+stringData:
+  BETTER_AUTH_SECRET: "change-me-to-a-secure-random-string"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paperclip-api-keys
+  namespace: default
+type: Opaque
+stringData:
+  ANTHROPIC_API_KEY: "sk-ant-..."
+  OPENAI_API_KEY: "sk-..."

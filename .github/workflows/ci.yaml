@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.1.0
+          args: --timeout=5m
+
+  reconcile-guard:
+    name: Reconcile Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for bare r.Update/r.Create on managed resources
+        run: |
+          # Find bare r.Update() or r.Create() calls that are NOT on the CR itself
+          # and do NOT have a reconcile-guard:allow comment
+          if grep -rn 'r\.Update\|r\.Create' internal/controller/ \
+            | grep -v 'reconcile-guard:allow' \
+            | grep -v '_test\.go' \
+            | grep -v 'r\.Status()' \
+            | grep -v 'r\.Recorder' \
+            | grep -v 'controllerutil\.CreateOrUpdate' \
+            | grep -v 'ensureDatabaseSecret'; then
+            echo "ERROR: Found bare r.Update()/r.Create() calls on managed resources."
+            echo "Use controllerutil.CreateOrUpdate instead, or add '// reconcile-guard:allow' comment."
+            exit 1
+          fi
+          echo "Reconcile guard check passed."
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run tests
+        run: make test
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run gosec
+        uses: securego/gosec@master
+        with:
+          args: ./...
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          severity: CRITICAL,HIGH
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build binary
+        run: make build
+      - name: Build Docker image
+        run: make docker-build IMG=ghcr.io/paperclipai/k8s-operator:ci-${{ github.sha }}

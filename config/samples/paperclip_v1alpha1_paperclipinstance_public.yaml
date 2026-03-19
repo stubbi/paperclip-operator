@@ -1,0 +1,110 @@
+apiVersion: paperclip.paperclip.ai/v1alpha1
+kind: PaperclipInstance
+metadata:
+  name: paperclip-public
+  namespace: paperclip
+spec:
+  image:
+    repository: ghcr.io/paperclipai/paperclip
+    tag: latest
+
+  deployment:
+    mode: authenticated
+    exposure: public
+    publicURL: https://paperclip.example.com
+    allowedHostnames:
+      - paperclip.example.com
+
+  database:
+    mode: external
+    externalURLSecretRef:
+      name: paperclip-database
+      key: DATABASE_URL
+
+  auth:
+    secretRef:
+      name: paperclip-auth
+      key: BETTER_AUTH_SECRET
+
+  secrets:
+    masterKeySecretRef:
+      name: paperclip-secrets
+      key: MASTER_KEY
+    strictMode: true
+
+  storage:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: gp3
+
+  objectStorage:
+    provider: s3
+    bucket: my-paperclip-storage
+    region: us-east-1
+    credentialsSecretRef:
+      name: paperclip-s3
+
+  heartbeat:
+    enabled: true
+    intervalMS: 30000
+
+  adapters:
+    apiKeysSecretRef:
+      name: paperclip-api-keys
+
+  security:
+    networkPolicy:
+      enabled: true
+    rbac:
+      create: true
+      serviceAccountAnnotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/paperclip
+
+  networking:
+    service:
+      type: ClusterIP
+      port: 3100
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - paperclip.example.com
+      tls:
+        - hosts:
+            - paperclip.example.com
+          secretName: paperclip-tls
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+        nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+        nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+        nginx.ingress.kubernetes.io/proxy-set-headers: "Upgrade"
+
+  observability:
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        interval: 30s
+    logging:
+      level: info
+
+  availability:
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    nodeSelector:
+      kubernetes.io/arch: amd64
+
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "4"
+      memory: 4Gi
+
+  probes:
+    startup:
+      failureThreshold: 60
+      periodSeconds: 5

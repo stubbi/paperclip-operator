@@ -1,0 +1,158 @@
+package resources
+
+import (
+	paperclipv1alpha1 "github.com/paperclipai/k8s-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	// LabelApp is the standard app label key.
+	LabelApp = "app.kubernetes.io/name"
+	// LabelInstance is the instance label key.
+	LabelInstance = "app.kubernetes.io/instance"
+	// LabelManagedBy is the managed-by label key.
+	LabelManagedBy = "app.kubernetes.io/managed-by"
+	// LabelComponent is the component label key.
+	LabelComponent = "app.kubernetes.io/component"
+
+	// AppName is the application name used in labels.
+	AppName = "paperclip"
+	// ManagedBy is the manager name used in labels.
+	ManagedBy = "paperclip-operator"
+
+	// ContainerName is the name of the main Paperclip container.
+	ContainerName = "paperclip"
+	// DatabaseContainerName is the name of the PostgreSQL container.
+	DatabaseContainerName = "postgres"
+
+	// DefaultPort is the default Paperclip server port.
+	DefaultPort int32 = 3100
+	// PostgreSQLPort is the default PostgreSQL port.
+	PostgreSQLPort int32 = 5432
+
+	// DataVolumeName is the name of the Paperclip data volume.
+	DataVolumeName = "paperclip-data"
+	// DataMountPath is the mount path for the Paperclip data volume.
+	DataMountPath = "/paperclip"
+	// DatabaseVolumeName is the name of the PostgreSQL data volume.
+	DatabaseVolumeName = "pgdata"
+	// DatabaseMountPath is the mount path for the PostgreSQL data volume.
+	DatabaseMountPath = "/var/lib/postgresql/data"
+
+	// HealthPath is the HTTP health check path.
+	HealthPath = "/api/health"
+)
+
+// Ptr returns a pointer to the given value.
+func Ptr[T any](v T) *T {
+	return &v
+}
+
+// Labels returns the standard labels for a PaperclipInstance resource.
+func Labels(instance *paperclipv1alpha1.PaperclipInstance) map[string]string {
+	return map[string]string{
+		LabelApp:       AppName,
+		LabelInstance:  instance.Name,
+		LabelManagedBy: ManagedBy,
+	}
+}
+
+// LabelsWithComponent returns standard labels plus a component label.
+func LabelsWithComponent(instance *paperclipv1alpha1.PaperclipInstance, component string) map[string]string {
+	labels := Labels(instance)
+	labels[LabelComponent] = component
+	return labels
+}
+
+// SelectorLabels returns the minimal labels used for pod selectors.
+func SelectorLabels(instance *paperclipv1alpha1.PaperclipInstance) map[string]string {
+	return map[string]string{
+		LabelApp:      AppName,
+		LabelInstance: instance.Name,
+	}
+}
+
+// DatabaseSelectorLabels returns the labels used for the database pod selector.
+func DatabaseSelectorLabels(instance *paperclipv1alpha1.PaperclipInstance) map[string]string {
+	return map[string]string{
+		LabelApp:       AppName,
+		LabelInstance:  instance.Name,
+		LabelComponent: "database",
+	}
+}
+
+// ObjectMeta returns a standard ObjectMeta for a managed resource.
+func ObjectMeta(instance *paperclipv1alpha1.PaperclipInstance, name string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      name,
+		Namespace: instance.Namespace,
+		Labels:    Labels(instance),
+	}
+}
+
+// --- Naming conventions ---
+
+// StatefulSetName returns the StatefulSet name for a PaperclipInstance.
+func StatefulSetName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// ServiceName returns the Service name for a PaperclipInstance.
+func ServiceName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// ConfigMapName returns the ConfigMap name for a PaperclipInstance.
+func ConfigMapName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name + "-config"
+}
+
+// PVCName returns the PVC name for a PaperclipInstance.
+func PVCName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name + "-data"
+}
+
+// IngressName returns the Ingress name for a PaperclipInstance.
+func IngressName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// ServiceAccountName returns the ServiceAccount name for a PaperclipInstance.
+func ServiceAccountName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// NetworkPolicyName returns the NetworkPolicy name for a PaperclipInstance.
+func NetworkPolicyName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// DatabaseStatefulSetName returns the database StatefulSet name.
+func DatabaseStatefulSetName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name + "-db"
+}
+
+// DatabaseServiceName returns the database Service name.
+func DatabaseServiceName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name + "-db"
+}
+
+// DatabasePVCName returns the database PVC name.
+func DatabasePVCName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name + "-db-data"
+}
+
+// HPAName returns the HPA name for a PaperclipInstance.
+func HPAName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// PDBName returns the PDB name for a PaperclipInstance.
+func PDBName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name
+}
+
+// DatabaseSecretName returns the auto-generated database credentials secret name.
+func DatabaseSecretName(instance *paperclipv1alpha1.PaperclipInstance) string {
+	return instance.Name + "-db-credentials"
+}

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: paperclip-operator
+description: Kubernetes operator for managing Paperclip instances - the open-source AI agent orchestration platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.28.0"
+keywords:
+  - paperclip
+  - ai
+  - agents
+  - orchestration
+  - operator
+home: https://github.com/paperclipai/k8s-operator
+sources:
+  - https://github.com/paperclipai/k8s-operator
+maintainers:
+  - name: paperclipai
+    url: https://github.com/paperclipai
