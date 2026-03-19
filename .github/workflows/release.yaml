@@ -53,7 +53,7 @@ jobs:
         id: docker-image
         run: |
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          echo "name=${{ env.REGISTRY }}/${OWNER}/k8s-operator" >> $GITHUB_OUTPUT
+          echo "name=${{ env.REGISTRY }}/${OWNER}/paperclip-operator" >> $GITHUB_OUTPUT
 
       - name: Sign container images
         run: |
