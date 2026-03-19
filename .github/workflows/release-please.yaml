@@ -1,0 +1,78 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # PAT required: tags created by GITHUB_TOKEN don't trigger
+          # downstream workflows (release.yaml). A PAT makes the tag
+          # push appear as a user action, which triggers the release.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      # skip-github-release is set in release-please-config.json so that
+      # release-please does NOT create a GitHub release (which would
+      # conflict with GoReleaser's draft-then-publish flow on immutable
+      # releases). We create the tag manually below.
+      - name: Create release tag
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          COMMIT_MSG=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" \
+            --jq '.commit.message' | head -1)
+
+          VERSION=""
+          if [[ "$COMMIT_MSG" =~ ^chore\(main\):\ release\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          elif [[ "$COMMIT_MSG" =~ ^Merge\ pull\ request\ \#([0-9]+) ]]; then
+            PR_NUM="${BASH_REMATCH[1]}"
+            PR_TITLE=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUM}" --jq '.title')
+            if [[ "$PR_TITLE" =~ ^chore\(main\):\ release\ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+            fi
+          fi
+
+          if [[ -n "$VERSION" ]]; then
+            TAG="v${VERSION}"
+
+            if gh api "repos/${{ github.repository }}/git/refs/tags/${TAG}" &>/dev/null; then
+              echo "Tag ${TAG} already exists, skipping"
+            else
+              echo "Creating tag ${TAG} at ${{ github.sha }}"
+              gh api "repos/${{ github.repository }}/git/refs" \
+                -f ref="refs/tags/${TAG}" \
+                -f sha="${{ github.sha }}"
+              echo "Tag ${TAG} created - release workflow will trigger"
+            fi
+          else
+            echo "Not a release commit, skipping tag creation"
+          fi
+
+      - name: Fix stale autorelease labels
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          for STATE in merged closed; do
+            STALE_PRS=$(gh pr list \
+              --repo "${{ github.repository }}" \
+              --state "$STATE" \
+              --label "autorelease: pending" \
+              --json number,title \
+              --jq '.[].number')
+
+            for PR in $STALE_PRS; do
+              echo "Fixing stale label on ${STATE} PR #${PR}"
+              gh api "repos/${{ github.repository }}/issues/${PR}/labels/autorelease:%20pending" \
+                -X DELETE || true
+              gh api "repos/${{ github.repository }}/issues/${PR}/labels" \
+                -f "labels[]=autorelease: tagged" || true
+            done
+          done

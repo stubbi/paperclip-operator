@@ -96,6 +96,10 @@ help: ## Display this help.
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
+.PHONY: sync-chart-crds
+sync-chart-crds: manifests ## Sync CRDs from config/crd/bases/ into Helm chart templates.
+	bash hack/sync-chart-crds.sh
+
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -140,6 +144,14 @@ test-e2e: setup-test-e2e manifests generate fmt vet ## Run the e2e tests. Expect
 .PHONY: cleanup-test-e2e
 cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
 	@$(KIND) delete cluster --name $(KIND_CLUSTER)
+
+.PHONY: scorecard
+scorecard: operator-sdk ## Run operator-sdk scorecard tests.
+	$(OPERATOR_SDK) scorecard bundle --wait-time 120s
+
+.PHONY: bench
+bench: ## Run benchmarks for resource builders.
+	go test ./internal/resources/ -bench=. -benchmem -run=^$$ -count=1
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter

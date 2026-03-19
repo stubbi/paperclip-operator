@@ -6,8 +6,9 @@ on:
   pull_request:
     branches: [main]
 
-permissions:
-  contents: read
+env:
+  GO_VERSION: '1.24'
+  REGISTRY: ghcr.io
 
 jobs:
   lint:
@@ -15,12 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
-      - uses: golangci/golangci-lint-action@v6
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
         with:
           version: v2.1.0
+          install-mode: goinstall
           args: --timeout=5m
 
   reconcile-guard:
@@ -28,62 +33,204 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check for bare r.Update/r.Create on managed resources
+
+      - name: Check for unconditional Update on managed resources
         run: |
-          # Find bare r.Update() or r.Create() calls that are NOT on the CR itself
-          # and do NOT have a reconcile-guard:allow comment
-          if grep -rn 'r\.Update\|r\.Create' internal/controller/ \
-            | grep -v 'reconcile-guard:allow' \
-            | grep -v '_test\.go' \
-            | grep -v 'r\.Status()' \
-            | grep -v 'r\.Recorder' \
-            | grep -v 'controllerutil\.CreateOrUpdate' \
-            | grep -v 'ensureDatabaseSecret'; then
-            echo "ERROR: Found bare r.Update()/r.Create() calls on managed resources."
-            echo "Use controllerutil.CreateOrUpdate instead, or add '// reconcile-guard:allow' comment."
+          # Detect bare r.Update/r.Create calls in the controller that bypass
+          # controllerutil.CreateOrUpdate. Only r.Update(ctx, instance) and
+          # r.Status().Update(ctx, instance) are allowed (CR-level updates).
+          VIOLATIONS=$(grep -n 'r\.Update(ctx,' internal/controller/paperclipinstance_controller.go \
+            | grep -v 'instance)' \
+            | grep -v '// reconcile-guard:allow' || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::Found bare r.Update() calls on managed resources. Use controllerutil.CreateOrUpdate instead."
+            echo "Violations:"
+            echo "$VIOLATIONS"
+            echo ""
+            echo "If this is intentional, add '// reconcile-guard:allow' to the line."
             exit 1
           fi
-          echo "Reconcile guard check passed."
+          echo "No unconditional Update calls on managed resources found."
+
+  helm-rbac-sync:
+    name: Helm RBAC Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Helm chart RBAC matches kubebuilder markers
+        run: bash hack/check-helm-rbac-sync.sh
+
+  helm-crd-sync:
+    name: Helm CRD Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Helm chart CRD templates match generated CRDs
+        run: bash hack/sync-chart-crds.sh --check
 
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ env.GO_VERSION }}
+
       - name: Run tests
         run: make test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./cover.out
+          fail_ci_if_error: false
 
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ env.GO_VERSION }}
+
       - name: Run gosec
         uses: securego/gosec@master
         with:
-          args: ./...
-      - name: Run Trivy
+          args: -exclude-generated ./...
+
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: fs
-          severity: CRITICAL,HIGH
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
 
   build:
     name: Build
+    needs: [lint, test, security-scan]
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        id: image
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # Only build arm64 on main (where we push). PRs only need amd64 to
+          # verify the build -- arm64 cross-compilation via QEMU adds ~15 min.
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  e2e:
+    name: E2E Tests
+    needs: [lint, test, security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
-      - name: Build binary
-        run: make build
-      - name: Build Docker image
-        run: make docker-build IMG=ghcr.io/paperclipai/k8s-operator:ci-${{ github.sha }}
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Lowercase image name
+        id: image
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: e2e-test
+
+      - name: Build operator image for kind
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:e2e .
+
+      - name: Load image into kind
+        run: |
+          kind load docker-image ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:e2e --name e2e-test
+
+      - name: Install CRDs
+        run: make install
+
+      - name: Deploy operator
+        run: |
+          make deploy IMG=${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:e2e
+
+      - name: Wait for operator
+        run: |
+          kubectl wait --for=condition=available --timeout=180s deployment/paperclip-operator-controller-manager -n paperclip-operator-system
+
+      - name: Debug operator status
+        if: failure()
+        run: |
+          echo "=== Deployment status ==="
+          kubectl get deployment -n paperclip-operator-system
+          echo "=== Pod status ==="
+          kubectl get pods -n paperclip-operator-system
+          echo "=== Pod logs ==="
+          kubectl logs -n paperclip-operator-system -l control-plane=controller-manager --tail=100 || true
+          echo "=== Pod describe ==="
+          kubectl describe pods -n paperclip-operator-system || true
+
+      - name: Run E2E tests
+        run: make test-e2e
+
+      - name: Install operator-sdk
+        run: |
+          export ARCH=$(case $(uname -m) in x86_64) echo -n amd64 ;; aarch64) echo -n arm64 ;; *) echo -n $(uname -m) ;; esac)
+          export OS=$(uname | awk '{print tolower($0)}')
+          curl -sSLo /usr/local/bin/operator-sdk "https://github.com/operator-framework/operator-sdk/releases/download/v1.42.0/operator-sdk_${OS}_${ARCH}"
+          chmod +x /usr/local/bin/operator-sdk
+          operator-sdk version
+
+      - name: Run scorecard tests
+        run: operator-sdk scorecard bundle --wait-time 120s || true
+
+      - name: Dump operator logs
+        if: failure()
+        run: |
+          echo "=== Operator pod status ==="
+          kubectl get pods -n paperclip-operator-system
+          echo "=== PaperclipInstance resources ==="
+          kubectl get paperclipinstances -A -o wide || true
+          echo "=== Operator logs (all) ==="
+          kubectl logs -n paperclip-operator-system -l control-plane=controller-manager --tail=-1 || true

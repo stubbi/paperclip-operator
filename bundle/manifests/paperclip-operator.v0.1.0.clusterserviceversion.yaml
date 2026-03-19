@@ -1,0 +1,303 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: paperclip-operator.v0.1.0
+  namespace: placeholder
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "paperclip.paperclip.ai/v1alpha1",
+          "kind": "PaperclipInstance",
+          "metadata": {
+            "name": "my-paperclip"
+          },
+          "spec": {
+            "image": {
+              "tag": "latest"
+            },
+            "deployment": {
+              "mode": "authenticated"
+            },
+            "database": {
+              "mode": "managed"
+            },
+            "storage": {
+              "persistence": {
+                "enabled": true,
+                "size": "5Gi"
+              }
+            }
+          }
+        }
+      ]
+    capabilities: Full Lifecycle
+    categories: AI/Machine Learning
+    containerImage: ghcr.io/paperclipai/k8s-operator:v0.1.0
+    createdAt: "2026-03-19T00:00:00Z"
+    description: Kubernetes operator for managing Paperclip instances - the open-source AI agent orchestration platform.
+    operators.operatorframework.io/builder: operator-sdk-v1.42.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+    repository: https://github.com/paperclipai/k8s-operator
+    support: Paperclip AI
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+      - description: PaperclipInstance is the Schema for the paperclipinstances API.
+        displayName: Paperclip Instance
+        kind: PaperclipInstance
+        name: paperclipinstances.paperclip.paperclip.ai
+        version: v1alpha1
+  description: |
+    ## Paperclip Kubernetes Operator
+
+    The Paperclip Operator automates the deployment and lifecycle management
+    of [Paperclip](https://github.com/paperclipai/paperclip) instances on
+    Kubernetes. Paperclip is the open-source AI agent orchestration platform
+    for zero-human companies.
+
+    ### Features
+
+    * **Managed PostgreSQL** - Operator provisions and manages PostgreSQL 17
+    * **External Database** - Connect to existing PostgreSQL
+    * **Persistent Storage** - PVC for the Paperclip data directory
+    * **S3 Object Storage** - S3/MinIO/R2 for multi-replica deployments
+    * **Ingress + WebSocket** - Full Ingress support with WebSocket
+    * **Network Policies** - Deny-all baseline with selective allow rules
+    * **Auto-scaling** - HPA with CPU/memory targets
+    * **Health Probes** - Against Paperclip's /api/health endpoint
+    * **LLM API Keys** - Inject Anthropic, OpenAI keys from Secrets
+    * **Secrets Management** - Encrypted secrets with master key support
+
+    ### Getting Started
+
+    Create a PaperclipInstance custom resource to deploy Paperclip:
+
+    ```yaml
+    apiVersion: paperclip.paperclip.ai/v1alpha1
+    kind: PaperclipInstance
+    metadata:
+      name: my-paperclip
+    spec:
+      image:
+        tag: latest
+      deployment:
+        mode: authenticated
+      database:
+        mode: managed
+      storage:
+        persistence:
+          enabled: true
+          size: 5Gi
+    ```
+  displayName: Paperclip Operator
+  icon:
+    - base64data: ""
+      mediatype: image/svg+xml
+  install:
+    spec:
+      clusterPermissions:
+        - rules:
+            - apiGroups:
+                - paperclip.paperclip.ai
+              resources:
+                - paperclipinstances
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - paperclip.paperclip.ai
+              resources:
+                - paperclipinstances/status
+              verbs:
+                - get
+                - update
+                - patch
+            - apiGroups:
+                - paperclip.paperclip.ai
+              resources:
+                - paperclipinstances/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - apps
+              resources:
+                - statefulsets
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - services
+                - configmaps
+                - persistentvolumeclaims
+                - serviceaccounts
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - secrets
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - ""
+              resources:
+                - events
+              verbs:
+                - create
+                - patch
+            - apiGroups:
+                - networking.k8s.io
+              resources:
+                - ingresses
+                - networkpolicies
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - autoscaling
+              resources:
+                - horizontalpodautoscalers
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - policy
+              resources:
+                - poddisruptionbudgets
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+          serviceAccountName: paperclip-operator-controller-manager
+      deployments:
+        - label:
+            app.kubernetes.io/name: paperclip-operator
+            control-plane: controller-manager
+          name: paperclip-operator-controller-manager
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                control-plane: controller-manager
+            template:
+              metadata:
+                labels:
+                  control-plane: controller-manager
+              spec:
+                containers:
+                  - args:
+                      - --health-probe-bind-address=:8081
+                      - --metrics-bind-address=:8443
+                      - --metrics-secure=true
+                      - --leader-elect
+                    image: ghcr.io/paperclipai/k8s-operator:v0.1.0
+                    livenessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: 8081
+                      initialDelaySeconds: 15
+                      periodSeconds: 20
+                    name: manager
+                    readinessProbe:
+                      httpGet:
+                        path: /readyz
+                        port: 8081
+                      initialDelaySeconds: 5
+                      periodSeconds: 10
+                    resources:
+                      limits:
+                        cpu: 500m
+                        memory: 256Mi
+                      requests:
+                        cpu: 100m
+                        memory: 128Mi
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      capabilities:
+                        drop:
+                          - ALL
+                      readOnlyRootFilesystem: true
+                      runAsNonRoot: true
+                      seccompProfile:
+                        type: RuntimeDefault
+                securityContext:
+                  runAsNonRoot: true
+                serviceAccountName: paperclip-operator-controller-manager
+                terminationGracePeriodSeconds: 10
+    strategy: deployment
+  installModes:
+    - supported: true
+      type: OwnNamespace
+    - supported: true
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: true
+      type: AllNamespaces
+  keywords:
+    - paperclip
+    - ai
+    - agents
+    - orchestration
+    - kubernetes
+  links:
+    - name: GitHub
+      url: https://github.com/paperclipai/k8s-operator
+    - name: Paperclip
+      url: https://github.com/paperclipai/paperclip
+  maintainers:
+    - email: jannes@openclaw.rocks
+      name: Jannes Stubbemann
+  maturity: alpha
+  minKubeVersion: 1.28.0
+  provider:
+    name: Paperclip AI
+    url: https://github.com/paperclipai
+  version: 0.1.0

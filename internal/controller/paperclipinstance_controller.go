@@ -81,6 +81,7 @@ type PaperclipInstanceReconciler struct {
 // Reconcile moves the cluster state toward the desired state defined by the PaperclipInstance CR.
 func (r *PaperclipInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
+	start := time.Now()
 
 	// Fetch the PaperclipInstance
 	instance := &paperclipv1alpha1.PaperclipInstance{}
@@ -90,6 +91,30 @@ func (r *PaperclipInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		return ctrl.Result{}, err
 	}
+
+	// Record metrics at the end of reconciliation
+	defer func() {
+		reconcileDuration.WithLabelValues(instance.Name, instance.Namespace).Observe(time.Since(start).Seconds())
+		// Update phase metric
+		for _, phase := range []string{"Pending", "Provisioning", "Running", "Degraded", "Failed", "Terminating"} {
+			val := float64(0)
+			if string(instance.Status.Phase) == phase {
+				val = 1
+			}
+			instancePhase.WithLabelValues(instance.Name, instance.Namespace, phase).Set(val)
+		}
+		// Update info metric
+		image := instance.Spec.Image.Repository + ":" + instance.Spec.Image.Tag
+		instanceInfo.WithLabelValues(instance.Name, instance.Namespace, instance.Spec.Image.Tag, image).Set(1)
+		// Update ready metric
+		ready := float64(0)
+		for _, cond := range instance.Status.Conditions {
+			if cond.Type == ConditionReady && cond.Status == metav1.ConditionTrue {
+				ready = 1
+			}
+		}
+		instanceReady.WithLabelValues(instance.Name, instance.Namespace).Set(ready)
+	}()
 
 	// Handle deletion
 	if !instance.DeletionTimestamp.IsZero() {
@@ -183,6 +208,13 @@ func (r *PaperclipInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Update status
 	if err := r.updateStatus(ctx, instance); err != nil {
 		return ctrl.Result{}, err
+	}
+
+	reconcileTotal.WithLabelValues(instance.Name, instance.Namespace, "success").Inc()
+
+	if r.Recorder != nil {
+		r.Recorder.Event(instance, corev1.EventTypeNormal, "ReconcileSucceeded",
+			"All managed resources reconciled successfully")
 	}
 
 	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
@@ -549,6 +581,9 @@ func (r *PaperclipInstanceReconciler) setPhase(ctx context.Context, instance *pa
 func (r *PaperclipInstanceReconciler) handleError(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance, resource string, err error) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 	log.Error(err, "Failed to reconcile resource", "resource", resource)
+
+	reconcileTotal.WithLabelValues(instance.Name, instance.Namespace, "error").Inc()
+	resourceCreationFailures.WithLabelValues(instance.Name, instance.Namespace, resource).Inc()
 
 	instance.Status.Phase = paperclipv1alpha1.PhaseDegraded
 	meta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{
