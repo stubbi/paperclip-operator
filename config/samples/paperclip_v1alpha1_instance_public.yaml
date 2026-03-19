@@ -1,5 +1,5 @@
 apiVersion: paperclip.inc/v1alpha1
-kind: PaperclipInstance
+kind: Instance
 metadata:
   name: paperclip-public
   namespace: paperclip

@@ -9,13 +9,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func newTestInstance(name string) *paperclipv1alpha1.PaperclipInstance {
-	return &paperclipv1alpha1.PaperclipInstance{
+func newTestInstance(name string) *paperclipv1alpha1.Instance {
+	return &paperclipv1alpha1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "test-ns",
 		},
-		Spec: paperclipv1alpha1.PaperclipInstanceSpec{
+		Spec: paperclipv1alpha1.InstanceSpec{
 			Image: paperclipv1alpha1.ImageSpec{
 				Repository: "ghcr.io/paperclipai/paperclip",
 				Tag:        "v1.0.0",
@@ -404,7 +404,7 @@ func TestNamingConventions(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		fn       func(*paperclipv1alpha1.PaperclipInstance) string
+		fn       func(*paperclipv1alpha1.Instance) string
 		expected string
 	}{
 		{"StatefulSetName", StatefulSetName, "my-paperclip"},

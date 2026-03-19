@@ -6,8 +6,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// BuildHorizontalPodAutoscaler constructs the HPA for a PaperclipInstance.
-func BuildHorizontalPodAutoscaler(instance *paperclipv1alpha1.PaperclipInstance) *autoscalingv2.HorizontalPodAutoscaler {
+// BuildHorizontalPodAutoscaler constructs the HPA for a Instance.
+func BuildHorizontalPodAutoscaler(instance *paperclipv1alpha1.Instance) *autoscalingv2.HorizontalPodAutoscaler {
 	as := instance.Spec.Availability.AutoScaling
 	if as == nil {
 		return nil

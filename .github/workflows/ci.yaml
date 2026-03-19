@@ -39,7 +39,7 @@ jobs:
           # Detect bare r.Update/r.Create calls in the controller that bypass
           # controllerutil.CreateOrUpdate. Only r.Update(ctx, instance) and
           # r.Status().Update(ctx, instance) are allowed (CR-level updates).
-          VIOLATIONS=$(grep -n 'r\.Update(ctx,' internal/controller/paperclipinstance_controller.go \
+          VIOLATIONS=$(grep -n 'r\.Update(ctx,' internal/controller/instance_controller.go \
             | grep -v 'instance)' \
             | grep -v '// reconcile-guard:allow' || true)
           if [ -n "$VIOLATIONS" ]; then
@@ -230,7 +230,7 @@ jobs:
         run: |
           echo "=== Operator pod status ==="
           kubectl get pods -n paperclip-operator-system
-          echo "=== PaperclipInstance resources ==="
-          kubectl get paperclipinstances -A -o wide || true
+          echo "=== Instance resources ==="
+          kubectl get instances -A -o wide || true
           echo "=== Operator logs (all) ==="
           kubectl logs -n paperclip-operator-system -l control-plane=controller-manager --tail=-1 || true

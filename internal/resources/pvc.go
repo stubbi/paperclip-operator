@@ -7,7 +7,7 @@ import (
 )
 
 // BuildPersistentVolumeClaim constructs the PVC for the Paperclip data directory.
-func BuildPersistentVolumeClaim(instance *paperclipv1alpha1.PaperclipInstance) *corev1.PersistentVolumeClaim {
+func BuildPersistentVolumeClaim(instance *paperclipv1alpha1.Instance) *corev1.PersistentVolumeClaim {
 	size := instance.Spec.Storage.Persistence.Size
 	if size.IsZero() {
 		size = resource.MustParse("5Gi")
@@ -38,7 +38,7 @@ func BuildPersistentVolumeClaim(instance *paperclipv1alpha1.PaperclipInstance) *
 }
 
 // BuildDatabasePVC constructs the PVC for the managed PostgreSQL database.
-func BuildDatabasePVC(instance *paperclipv1alpha1.PaperclipInstance) *corev1.PersistentVolumeClaim {
+func BuildDatabasePVC(instance *paperclipv1alpha1.Instance) *corev1.PersistentVolumeClaim {
 	size := instance.Spec.Database.Managed.StorageSize
 	if size.IsZero() {
 		size = resource.MustParse("10Gi")

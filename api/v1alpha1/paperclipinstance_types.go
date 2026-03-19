@@ -22,8 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PaperclipInstanceSpec defines the desired state of a Paperclip instance.
-type PaperclipInstanceSpec struct {
+// InstanceSpec defines the desired state of a Paperclip instance.
+type InstanceSpec struct {
 	// Image specifies the Paperclip container image to deploy.
 	// +optional
 	Image ImageSpec `json:"image,omitempty"`
@@ -615,27 +615,27 @@ type BackupS3Spec struct {
 
 // --- Status types ---
 
-// PaperclipInstancePhase describes the phase of a PaperclipInstance.
+// InstancePhase describes the phase of a Instance.
 // +kubebuilder:validation:Enum=Pending;Provisioning;Running;Degraded;Failed;Terminating;BackingUp;Restoring;Updating
-type PaperclipInstancePhase string
+type InstancePhase string
 
 const (
-	PhasePending      PaperclipInstancePhase = "Pending"
-	PhaseProvisioning PaperclipInstancePhase = "Provisioning"
-	PhaseRunning      PaperclipInstancePhase = "Running"
-	PhaseDegraded     PaperclipInstancePhase = "Degraded"
-	PhaseFailed       PaperclipInstancePhase = "Failed"
-	PhaseTerminating  PaperclipInstancePhase = "Terminating"
-	PhaseBackingUp    PaperclipInstancePhase = "BackingUp"
-	PhaseRestoring    PaperclipInstancePhase = "Restoring"
-	PhaseUpdating     PaperclipInstancePhase = "Updating"
+	PhasePending      InstancePhase = "Pending"
+	PhaseProvisioning InstancePhase = "Provisioning"
+	PhaseRunning      InstancePhase = "Running"
+	PhaseDegraded     InstancePhase = "Degraded"
+	PhaseFailed       InstancePhase = "Failed"
+	PhaseTerminating  InstancePhase = "Terminating"
+	PhaseBackingUp    InstancePhase = "BackingUp"
+	PhaseRestoring    InstancePhase = "Restoring"
+	PhaseUpdating     InstancePhase = "Updating"
 )
 
-// PaperclipInstanceStatus defines the observed state of PaperclipInstance.
-type PaperclipInstanceStatus struct {
+// InstanceStatus defines the observed state of Instance.
+type InstanceStatus struct {
 	// Phase is the current phase of the instance.
 	// +optional
-	Phase PaperclipInstancePhase `json:"phase,omitempty"`
+	Phase InstancePhase `json:"phase,omitempty"`
 
 	// ObservedGeneration is the most recent generation observed by the controller.
 	// +optional
@@ -715,24 +715,24 @@ type RestoreStatus struct {
 // +kubebuilder:printcolumn:name="Endpoint",type=string,JSONPath=`.status.endpoint`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
-// PaperclipInstance is the Schema for the paperclipinstances API.
-type PaperclipInstance struct {
+// Instance is the Schema for the instances API.
+type Instance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PaperclipInstanceSpec   `json:"spec,omitempty"`
-	Status PaperclipInstanceStatus `json:"status,omitempty"`
+	Spec   InstanceSpec   `json:"spec,omitempty"`
+	Status InstanceStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// PaperclipInstanceList contains a list of PaperclipInstance.
-type PaperclipInstanceList struct {
+// InstanceList contains a list of Instance.
+type InstanceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []PaperclipInstance `json:"items"`
+	Items           []Instance `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&PaperclipInstance{}, &PaperclipInstanceList{})
+	SchemeBuilder.Register(&Instance{}, &InstanceList{})
 }

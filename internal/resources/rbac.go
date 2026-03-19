@@ -5,8 +5,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// BuildServiceAccount constructs the ServiceAccount for a PaperclipInstance.
-func BuildServiceAccount(instance *paperclipv1alpha1.PaperclipInstance) *corev1.ServiceAccount {
+// BuildServiceAccount constructs the ServiceAccount for a Instance.
+func BuildServiceAccount(instance *paperclipv1alpha1.Instance) *corev1.ServiceAccount {
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: ObjectMeta(instance, ServiceAccountName(instance)),
 	}

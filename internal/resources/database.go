@@ -9,7 +9,7 @@ import (
 )
 
 // BuildDatabaseStatefulSet constructs the PostgreSQL StatefulSet for managed database mode.
-func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.PaperclipInstance) *appsv1.StatefulSet {
+func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.StatefulSet {
 	labels := LabelsWithComponent(instance, "database")
 	selectorLabels := DatabaseSelectorLabels(instance)
 
@@ -142,7 +142,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.PaperclipInstance) *ap
 }
 
 // BuildDatabaseSecret constructs the auto-generated database credentials Secret.
-func BuildDatabaseSecret(instance *paperclipv1alpha1.PaperclipInstance, password string) *corev1.Secret {
+func BuildDatabaseSecret(instance *paperclipv1alpha1.Instance, password string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: ObjectMeta(instance, DatabaseSecretName(instance)),
 		Type:       corev1.SecretTypeOpaque,

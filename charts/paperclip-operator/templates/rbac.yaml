@@ -5,15 +5,15 @@ metadata:
   labels:
     {{- include "paperclip-operator.labels" . | nindent 4 }}
 rules:
-  # PaperclipInstance CRD
+  # Instance CRD
   - apiGroups: ["paperclip.inc"]
-    resources: ["paperclipinstances"]
+    resources: ["instances"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["paperclip.inc"]
-    resources: ["paperclipinstances/status"]
+    resources: ["instances/status"]
     verbs: ["get", "update", "patch"]
   - apiGroups: ["paperclip.inc"]
-    resources: ["paperclipinstances/finalizers"]
+    resources: ["instances/finalizers"]
     verbs: ["update"]
   # Core resources
   - apiGroups: [""]

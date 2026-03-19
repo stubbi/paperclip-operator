@@ -6,7 +6,7 @@ import (
 )
 
 // BuildService constructs the Paperclip Service.
-func BuildService(instance *paperclipv1alpha1.PaperclipInstance) *corev1.Service {
+func BuildService(instance *paperclipv1alpha1.Instance) *corev1.Service {
 	port := servicePort(instance)
 	svcType := corev1.ServiceTypeClusterIP
 	if instance.Spec.Networking.Service.Type != "" {
@@ -37,7 +37,7 @@ func BuildService(instance *paperclipv1alpha1.PaperclipInstance) *corev1.Service
 }
 
 // BuildDatabaseService constructs the PostgreSQL Service for managed database mode.
-func BuildDatabaseService(instance *paperclipv1alpha1.PaperclipInstance) *corev1.Service {
+func BuildDatabaseService(instance *paperclipv1alpha1.Instance) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: ObjectMeta(instance, DatabaseServiceName(instance)),
 		Spec: corev1.ServiceSpec{

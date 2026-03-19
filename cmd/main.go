@@ -202,12 +202,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := (&controller.PaperclipInstanceReconciler{
+	if err := (&controller.InstanceReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("paperclip-operator"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PaperclipInstance")
+		setupLog.Error(err, "unable to create controller", "controller", "Instance")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

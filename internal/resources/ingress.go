@@ -5,8 +5,8 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 )
 
-// BuildIngress constructs the Ingress for a PaperclipInstance.
-func BuildIngress(instance *paperclipv1alpha1.PaperclipInstance) *networkingv1.Ingress {
+// BuildIngress constructs the Ingress for a Instance.
+func BuildIngress(instance *paperclipv1alpha1.Instance) *networkingv1.Ingress {
 	ing := instance.Spec.Networking.Ingress
 	if ing == nil {
 		return nil

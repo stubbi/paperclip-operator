@@ -11,7 +11,7 @@ import (
 )
 
 // BuildStatefulSet constructs the Paperclip server StatefulSet.
-func BuildStatefulSet(instance *paperclipv1alpha1.PaperclipInstance) *appsv1.StatefulSet {
+func BuildStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.StatefulSet {
 	labels := Labels(instance)
 	selectorLabels := SelectorLabels(instance)
 
@@ -101,7 +101,7 @@ func BuildStatefulSet(instance *paperclipv1alpha1.PaperclipInstance) *appsv1.Sta
 	return sts
 }
 
-func buildMainContainer(instance *paperclipv1alpha1.PaperclipInstance) corev1.Container {
+func buildMainContainer(instance *paperclipv1alpha1.Instance) corev1.Container {
 	image := containerImage(instance)
 	port := servicePort(instance)
 
@@ -143,7 +143,7 @@ func buildMainContainer(instance *paperclipv1alpha1.PaperclipInstance) corev1.Co
 	return container
 }
 
-func buildEnvVars(instance *paperclipv1alpha1.PaperclipInstance) []corev1.EnvVar {
+func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 	port := servicePort(instance)
 	vars := []corev1.EnvVar{
 		{Name: "PORT", Value: fmt.Sprintf("%d", port)},
@@ -309,7 +309,7 @@ func buildEnvVars(instance *paperclipv1alpha1.PaperclipInstance) []corev1.EnvVar
 	return vars
 }
 
-func buildVolumes(instance *paperclipv1alpha1.PaperclipInstance) []corev1.Volume {
+func buildVolumes(instance *paperclipv1alpha1.Instance) []corev1.Volume {
 	var volumes []corev1.Volume
 
 	if instance.Spec.Storage.Persistence.Enabled {
@@ -333,7 +333,7 @@ func buildVolumes(instance *paperclipv1alpha1.PaperclipInstance) []corev1.Volume
 	return volumes
 }
 
-func buildVolumeMounts(instance *paperclipv1alpha1.PaperclipInstance) []corev1.VolumeMount {
+func buildVolumeMounts(instance *paperclipv1alpha1.Instance) []corev1.VolumeMount {
 	mounts := []corev1.VolumeMount{
 		{
 			Name:      DataVolumeName,
@@ -347,7 +347,7 @@ func buildVolumeMounts(instance *paperclipv1alpha1.PaperclipInstance) []corev1.V
 	return mounts
 }
 
-func buildLivenessProbe(instance *paperclipv1alpha1.PaperclipInstance, port int32) *corev1.Probe {
+func buildLivenessProbe(instance *paperclipv1alpha1.Instance, port int32) *corev1.Probe {
 	probe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -384,7 +384,7 @@ func buildLivenessProbe(instance *paperclipv1alpha1.PaperclipInstance, port int3
 	return probe
 }
 
-func buildReadinessProbe(instance *paperclipv1alpha1.PaperclipInstance, port int32) *corev1.Probe {
+func buildReadinessProbe(instance *paperclipv1alpha1.Instance, port int32) *corev1.Probe {
 	probe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -421,7 +421,7 @@ func buildReadinessProbe(instance *paperclipv1alpha1.PaperclipInstance, port int
 	return probe
 }
 
-func buildStartupProbe(instance *paperclipv1alpha1.PaperclipInstance, port int32) *corev1.Probe {
+func buildStartupProbe(instance *paperclipv1alpha1.Instance, port int32) *corev1.Probe {
 	probe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -458,7 +458,7 @@ func buildStartupProbe(instance *paperclipv1alpha1.PaperclipInstance, port int32
 	return probe
 }
 
-func containerImage(instance *paperclipv1alpha1.PaperclipInstance) string {
+func containerImage(instance *paperclipv1alpha1.Instance) string {
 	repo := instance.Spec.Image.Repository
 	if repo == "" {
 		repo = "ghcr.io/paperclipai/paperclip"
@@ -475,14 +475,14 @@ func containerImage(instance *paperclipv1alpha1.PaperclipInstance) string {
 	return repo + ":" + tag
 }
 
-func imagePullPolicy(instance *paperclipv1alpha1.PaperclipInstance) corev1.PullPolicy {
+func imagePullPolicy(instance *paperclipv1alpha1.Instance) corev1.PullPolicy {
 	if instance.Spec.Image.PullPolicy != "" {
 		return instance.Spec.Image.PullPolicy
 	}
 	return corev1.PullIfNotPresent
 }
 
-func servicePort(instance *paperclipv1alpha1.PaperclipInstance) int32 {
+func servicePort(instance *paperclipv1alpha1.Instance) int32 {
 	if instance.Spec.Networking.Service.Port > 0 {
 		return instance.Spec.Networking.Service.Port
 	}

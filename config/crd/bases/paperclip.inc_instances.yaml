@@ -4,16 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: paperclipinstances.paperclip.inc
+  name: instances.paperclip.inc
 spec:
   group: paperclip.inc
   names:
-    kind: PaperclipInstance
-    listKind: PaperclipInstanceList
-    plural: paperclipinstances
+    kind: Instance
+    listKind: InstanceList
+    plural: instances
     shortNames:
     - pci
-    singular: paperclipinstance
+    singular: instance
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -29,7 +29,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PaperclipInstance is the Schema for the paperclipinstances API.
+        description: Instance is the Schema for the instances API.
         properties:
           apiVersion:
             description: |-
@@ -49,8 +49,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: PaperclipInstanceSpec defines the desired state of a Paperclip
-              instance.
+            description: InstanceSpec defines the desired state of a Paperclip instance.
             properties:
               adapters:
                 description: Adapters configures agent runtime adapters.
@@ -7292,7 +7291,7 @@ spec:
                 type: object
             type: object
           status:
-            description: PaperclipInstanceStatus defines the observed state of PaperclipInstance.
+            description: InstanceStatus defines the observed state of Instance.
             properties:
               backup:
                 description: Backup tracks the state of the latest backup operation.

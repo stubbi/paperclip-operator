@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	// FinalizerName is the finalizer added to PaperclipInstances.
+	// FinalizerName is the finalizer added to Instances.
 	FinalizerName = "paperclip.ai/finalizer"
 
 	// ConditionReady indicates the instance is fully operational.
@@ -55,16 +55,16 @@ const (
 	ConditionServiceReady = "ServiceReady"
 )
 
-// PaperclipInstanceReconciler reconciles a PaperclipInstance object.
-type PaperclipInstanceReconciler struct {
+// InstanceReconciler reconciles a Instance object.
+type InstanceReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups=paperclip.inc,resources=paperclipinstances,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=paperclip.inc,resources=paperclipinstances/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=paperclip.inc,resources=paperclipinstances/finalizers,verbs=update
+// +kubebuilder:rbac:groups=paperclip.inc,resources=instances,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=paperclip.inc,resources=instances/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=paperclip.inc,resources=instances/finalizers,verbs=update
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
@@ -78,13 +78,13 @@ type PaperclipInstanceReconciler struct {
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile moves the cluster state toward the desired state defined by the PaperclipInstance CR.
-func (r *PaperclipInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// Reconcile moves the cluster state toward the desired state defined by the Instance CR.
+func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 	start := time.Now()
 
-	// Fetch the PaperclipInstance
-	instance := &paperclipv1alpha1.PaperclipInstance{}
+	// Fetch the Instance
+	instance := &paperclipv1alpha1.Instance{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -220,7 +220,7 @@ func (r *PaperclipInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileServiceAccount(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileServiceAccount(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildServiceAccount(instance)
 	obj := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
@@ -242,7 +242,7 @@ func (r *PaperclipInstanceReconciler) reconcileServiceAccount(ctx context.Contex
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileManagedDatabase(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileManagedDatabase(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	// Ensure database credentials secret exists
 	if err := r.ensureDatabaseSecret(ctx, instance); err != nil {
 		return fmt.Errorf("reconciling database secret: %w", err)
@@ -316,7 +316,7 @@ func (r *PaperclipInstanceReconciler) reconcileManagedDatabase(ctx context.Conte
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) ensureDatabaseSecret(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) ensureDatabaseSecret(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	secret := &corev1.Secret{}
 	secretName := resources.DatabaseSecretName(instance)
 	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: instance.Namespace}, secret)
@@ -337,7 +337,7 @@ func (r *PaperclipInstanceReconciler) ensureDatabaseSecret(ctx context.Context, 
 	return err
 }
 
-func (r *PaperclipInstanceReconciler) reconcilePVC(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcilePVC(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	pvc := &corev1.PersistentVolumeClaim{}
 	pvcName := resources.PVCName(instance)
 	err := r.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
@@ -359,7 +359,7 @@ func (r *PaperclipInstanceReconciler) reconcilePVC(ctx context.Context, instance
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileStatefulSet(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileStatefulSet(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildStatefulSet(instance)
 	obj := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -400,7 +400,7 @@ func (r *PaperclipInstanceReconciler) reconcileStatefulSet(ctx context.Context, 
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileService(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileService(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildService(instance)
 	obj := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -436,7 +436,7 @@ func (r *PaperclipInstanceReconciler) reconcileService(ctx context.Context, inst
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileIngress(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileIngress(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildIngress(instance)
 	if desired == nil {
 		return nil
@@ -463,7 +463,7 @@ func (r *PaperclipInstanceReconciler) reconcileIngress(ctx context.Context, inst
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileNetworkPolicy(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileNetworkPolicy(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildNetworkPolicy(instance)
 	obj := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -485,7 +485,7 @@ func (r *PaperclipInstanceReconciler) reconcileNetworkPolicy(ctx context.Context
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcileHPA(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcileHPA(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildHorizontalPodAutoscaler(instance)
 	if desired == nil {
 		return nil
@@ -506,7 +506,7 @@ func (r *PaperclipInstanceReconciler) reconcileHPA(ctx context.Context, instance
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) reconcilePDB(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) reconcilePDB(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildPodDisruptionBudget(instance)
 	if desired == nil {
 		return nil
@@ -527,7 +527,7 @@ func (r *PaperclipInstanceReconciler) reconcilePDB(ctx context.Context, instance
 	return nil
 }
 
-func (r *PaperclipInstanceReconciler) updateStatus(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance) error {
+func (r *InstanceReconciler) updateStatus(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	instance.Status.ObservedGeneration = instance.Generation
 
 	// Determine overall phase
@@ -574,11 +574,11 @@ func (r *PaperclipInstanceReconciler) updateStatus(ctx context.Context, instance
 	return r.Status().Update(ctx, instance)
 }
 
-func (r *PaperclipInstanceReconciler) setPhase(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance, phase paperclipv1alpha1.PaperclipInstancePhase) {
+func (r *InstanceReconciler) setPhase(ctx context.Context, instance *paperclipv1alpha1.Instance, phase paperclipv1alpha1.InstancePhase) {
 	instance.Status.Phase = phase
 }
 
-func (r *PaperclipInstanceReconciler) handleError(ctx context.Context, instance *paperclipv1alpha1.PaperclipInstance, resource string, err error) (ctrl.Result, error) {
+func (r *InstanceReconciler) handleError(ctx context.Context, instance *paperclipv1alpha1.Instance, resource string, err error) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 	log.Error(err, "Failed to reconcile resource", "resource", resource)
 
@@ -615,9 +615,9 @@ func generatePassword(length int) (string, error) {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PaperclipInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&paperclipv1alpha1.PaperclipInstance{}).
+		For(&paperclipv1alpha1.Instance{}).
 		Owns(&appsv1.StatefulSet{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
@@ -625,6 +625,6 @@ func (r *PaperclipInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Secret{}).
 		Owns(&networkingv1.Ingress{}).
 		Owns(&networkingv1.NetworkPolicy{}).
-		Named("paperclipinstance").
+		Named("instance").
 		Complete(r)
 }

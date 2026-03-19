@@ -11,12 +11,12 @@ metadata:
   labels:
     app.kubernetes.io/name: paperclip-operator
     app.kubernetes.io/managed-by: kustomize
-  name: paperclipinstance-editor-role
+  name: instance-editor-role
 rules:
 - apiGroups:
   - paperclip.inc
   resources:
-  - paperclipinstances
+  - instances
   verbs:
   - create
   - delete
@@ -28,6 +28,6 @@ rules:
 - apiGroups:
   - paperclip.inc
   resources:
-  - paperclipinstances/status
+  - instances/status
   verbs:
   - get

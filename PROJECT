@@ -17,7 +17,7 @@ resources:
   controller: true
   domain: inc
   group: paperclip
-  kind: PaperclipInstance
+  kind: Instance
   path: github.com/stubbi/paperclip-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

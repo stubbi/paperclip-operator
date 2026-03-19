@@ -5,7 +5,7 @@
 ### Features
 
 * Initial release of the Paperclip Kubernetes Operator
-* PaperclipInstance CRD with comprehensive configuration (image, database, auth, storage, networking, security, scaling, observability)
+* Instance CRD with comprehensive configuration (image, database, auth, storage, networking, security, scaling, observability)
 * Managed PostgreSQL mode with auto-generated credentials
 * External database support via connection string or Secret reference
 * Persistent storage with configurable PVC

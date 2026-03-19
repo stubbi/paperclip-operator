@@ -29,7 +29,7 @@ kubectl apply -f https://github.com/stubbi/paperclip-operator/releases/latest/do
 
 ```yaml
 apiVersion: paperclip.inc/v1alpha1
-kind: PaperclipInstance
+kind: Instance
 metadata:
   name: my-paperclip
 spec:
@@ -59,7 +59,7 @@ kubectl apply -f my-paperclip.yaml
 ### Check status
 
 ```bash
-kubectl get paperclipinstances
+kubectl get instances
 # or shorthand:
 kubectl get pci
 ```

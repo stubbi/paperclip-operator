@@ -85,7 +85,7 @@ rules:
 - apiGroups:
   - paperclip.inc
   resources:
-  - paperclipinstances
+  - instances
   verbs:
   - create
   - delete
@@ -97,13 +97,13 @@ rules:
 - apiGroups:
   - paperclip.inc
   resources:
-  - paperclipinstances/finalizers
+  - instances/finalizers
   verbs:
   - update
 - apiGroups:
   - paperclip.inc
   resources:
-  - paperclipinstances/status
+  - instances/status
   verbs:
   - get
   - patch

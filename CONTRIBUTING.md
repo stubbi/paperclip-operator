@@ -109,7 +109,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### CRD API Changes
 
-After modifying types in `api/v1alpha1/paperclipinstance_types.go`:
+After modifying types in `api/v1alpha1/instance_types.go`:
 1. Run `make generate` (regenerates deepcopy methods)
 2. Run `make manifests` (regenerates CRD YAML)
 3. Run `make sync-chart-crds` (syncs CRDs into Helm chart)

@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// BuildNetworkPolicy constructs the NetworkPolicy for a PaperclipInstance.
-func BuildNetworkPolicy(instance *paperclipv1alpha1.PaperclipInstance) *networkingv1.NetworkPolicy {
+// BuildNetworkPolicy constructs the NetworkPolicy for a Instance.
+func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.NetworkPolicy {
 	port := servicePort(instance)
 	dnsPort := intstr.FromInt32(53)
 

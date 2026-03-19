@@ -29,13 +29,13 @@ go vet ./...           # Go vet check
 ## Architecture
 
 ```
-api/v1alpha1/          -> CRD types (PaperclipInstance)
+api/v1alpha1/          -> CRD types (Instance)
 internal/controller/   -> Reconciliation logic (single controller + metrics)
 internal/resources/    -> Pure resource builder functions (StatefulSet, Service, etc.)
 config/crd/bases/      -> Generated CRD YAML (committed to git)
 charts/                -> Helm chart (CRDs as templates in templates/crds/)
 bundle/                -> OLM bundle for OperatorHub submissions
-config/samples/        -> Example PaperclipInstance CRs
+config/samples/        -> Example Instance CRs
 hack/                  -> Build/sync scripts (sync-chart-crds.sh, check-helm-rbac-sync.sh)
 .github/workflows/     -> CI/CD pipelines
 ```
@@ -137,7 +137,7 @@ git worktree remove ../paperclip-operator-<suffix>
 ```
 
 ### CRD API changes
-After modifying types in `api/v1alpha1/paperclipinstance_types.go`:
+After modifying types in `api/v1alpha1/instance_types.go`:
 1. Run `make generate` (regenerates `zz_generated.deepcopy.go`)
 2. Run `make manifests` (regenerates CRD YAML in `config/crd/bases/`)
 3. Run `make sync-chart-crds` (syncs CRDs into Helm chart templates)

@@ -7,8 +7,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// BuildPodDisruptionBudget constructs the PDB for a PaperclipInstance.
-func BuildPodDisruptionBudget(instance *paperclipv1alpha1.PaperclipInstance) *policyv1.PodDisruptionBudget {
+// BuildPodDisruptionBudget constructs the PDB for a Instance.
+func BuildPodDisruptionBudget(instance *paperclipv1alpha1.Instance) *policyv1.PodDisruptionBudget {
 	pdbSpec := instance.Spec.Availability.PodDisruptionBudget
 	if pdbSpec == nil {
 		return nil

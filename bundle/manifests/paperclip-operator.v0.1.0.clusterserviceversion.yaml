@@ -8,7 +8,7 @@ metadata:
       [
         {
           "apiVersion": "paperclip.inc/v1alpha1",
-          "kind": "PaperclipInstance",
+          "kind": "Instance",
           "metadata": {
             "name": "my-paperclip"
           },
@@ -44,10 +44,10 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-      - description: PaperclipInstance is the Schema for the paperclipinstances API.
+      - description: Instance is the Schema for the instances API.
         displayName: Paperclip Instance
-        kind: PaperclipInstance
-        name: paperclipinstances.paperclip.inc
+        kind: Instance
+        name: instances.paperclip.inc
         version: v1alpha1
   description: |
     ## Paperclip Kubernetes Operator
@@ -72,11 +72,11 @@ spec:
 
     ### Getting Started
 
-    Create a PaperclipInstance custom resource to deploy Paperclip:
+    Create a Instance custom resource to deploy Paperclip:
 
     ```yaml
     apiVersion: paperclip.inc/v1alpha1
-    kind: PaperclipInstance
+    kind: Instance
     metadata:
       name: my-paperclip
     spec:
@@ -102,7 +102,7 @@ spec:
             - apiGroups:
                 - paperclip.inc
               resources:
-                - paperclipinstances
+                - instances
               verbs:
                 - get
                 - list
@@ -114,7 +114,7 @@ spec:
             - apiGroups:
                 - paperclip.inc
               resources:
-                - paperclipinstances/status
+                - instances/status
               verbs:
                 - get
                 - update
@@ -122,7 +122,7 @@ spec:
             - apiGroups:
                 - paperclip.inc
               resources:
-                - paperclipinstances/finalizers
+                - instances/finalizers
               verbs:
                 - update
             - apiGroups:
