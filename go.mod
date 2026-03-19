@@ -1,4 +1,4 @@
-module github.com/openclaw-rocks/paperclip-operator
+module github.com/stubbi/paperclip-operator
 
 go 1.24.0
 

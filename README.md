@@ -19,10 +19,10 @@ The Paperclip Operator automates the deployment and lifecycle management of Pape
 
 ```bash
 # Via Helm
-helm install paperclip-operator oci://ghcr.io/openclaw-rocks/charts/paperclip-operator
+helm install paperclip-operator oci://ghcr.io/stubbi/charts/paperclip-operator
 
 # Or via kubectl
-kubectl apply -f https://github.com/openclaw-rocks/paperclip-operator/releases/latest/download/install.yaml
+kubectl apply -f https://github.com/stubbi/paperclip-operator/releases/latest/download/install.yaml
 ```
 
 ### Create a Paperclip instance

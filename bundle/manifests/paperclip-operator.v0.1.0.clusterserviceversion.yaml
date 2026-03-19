@@ -33,12 +33,12 @@ metadata:
       ]
     capabilities: Full Lifecycle
     categories: AI/Machine Learning
-    containerImage: ghcr.io/openclaw-rocks/paperclip-operator:v0.1.0
+    containerImage: ghcr.io/stubbi/paperclip-operator:v0.1.0
     createdAt: "2026-03-19T00:00:00Z"
     description: Kubernetes operator for managing Paperclip instances - the open-source AI agent orchestration platform.
     operators.operatorframework.io/builder: operator-sdk-v1.42.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    repository: https://github.com/openclaw-rocks/paperclip-operator
+    repository: https://github.com/stubbi/paperclip-operator
     support: Paperclip AI
 spec:
   apiservicedefinitions: {}
@@ -237,7 +237,7 @@ spec:
                       - --metrics-bind-address=:8443
                       - --metrics-secure=true
                       - --leader-elect
-                    image: ghcr.io/openclaw-rocks/paperclip-operator:v0.1.0
+                    image: ghcr.io/stubbi/paperclip-operator:v0.1.0
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -289,7 +289,7 @@ spec:
     - kubernetes
   links:
     - name: GitHub
-      url: https://github.com/openclaw-rocks/paperclip-operator
+      url: https://github.com/stubbi/paperclip-operator
     - name: Paperclip
       url: https://github.com/openclaw-rocks/paperclip
   maintainers:

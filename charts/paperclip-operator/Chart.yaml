@@ -11,9 +11,9 @@ keywords:
   - agents
   - orchestration
   - operator
-home: https://github.com/openclaw-rocks/paperclip-operator
+home: https://github.com/stubbi/paperclip-operator
 sources:
-  - https://github.com/openclaw-rocks/paperclip-operator
+  - https://github.com/stubbi/paperclip-operator
 maintainers:
-  - name: openclaw-rocks
-    url: https://github.com/openclaw-rocks
+  - name: stubbi
+    url: https://github.com/stubbi

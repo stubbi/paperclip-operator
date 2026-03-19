@@ -25,7 +25,7 @@ dockers_v2:
     ids:
       - manager
     images:
-      - "ghcr.io/openclaw-rocks/paperclip-operator"
+      - "ghcr.io/stubbi/paperclip-operator"
     tags:
       - "{{ .Tag }}"
       - "{{ .Major }}.{{ .Minor }}"
@@ -70,5 +70,5 @@ release:
   draft: true
   replace_existing_artifacts: true
   github:
-    owner: openclaw-rocks
+    owner: stubbi
     name: paperclip-operator

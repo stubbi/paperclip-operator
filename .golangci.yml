@@ -85,7 +85,7 @@ formatters:
     - goimports
   settings:
     goimports:
-      local-prefixes: github.com/openclaw-rocks/paperclip-operator
+      local-prefixes: github.com/stubbi/paperclip-operator
   exclusions:
     generated: lax
     paths:

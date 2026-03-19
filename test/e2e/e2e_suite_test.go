@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/openclaw-rocks/paperclip-operator/test/utils"
+	"github.com/stubbi/paperclip-operator/test/utils"
 )
 
 var (
