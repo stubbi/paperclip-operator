@@ -22,7 +22,7 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the paperclip-operator itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
-- instance_admin_role.yaml
-- instance_editor_role.yaml
-- instance_viewer_role.yaml
+- paperclipinstance_admin_role.yaml
+- paperclipinstance_editor_role.yaml
+- paperclipinstance_viewer_role.yaml
 
