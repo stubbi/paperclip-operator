@@ -51,7 +51,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 			{Name: "PGDATA", Value: DatabaseMountPath + "/pgdata"},
 			{Name: "POSTGRES_INITDB_ARGS", Value: "--data-checksums"},
 		},
-		Resources:                databaseResources(instance),
+		Resources: databaseResources(instance),
 		Lifecycle: &corev1.Lifecycle{
 			PreStop: &corev1.LifecycleHandler{
 				Exec: &corev1.ExecAction{
