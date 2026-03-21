@@ -479,10 +479,8 @@ func buildOnboardInitContainer(instance *paperclipv1alpha1.Instance) corev1.Cont
 	image := containerImage(instance)
 
 	// Create the Paperclip config file if it doesn't exist yet.
-	// Uses `onboard --yes` which accepts quickstart defaults without starting the server.
-	// The `--run` flag is NOT used, so onboard only creates config and exits.
-	// Admin bootstrap (bootstrap-ceo) requires the server to be running for DB migrations,
-	// so it is handled by a postStart lifecycle hook on the main container instead.
+	// Uses `onboard --yes` which accepts quickstart defaults. Unfortunately this also
+	// starts the server, so we run it in the background and kill it once the config exists.
 	script := `
 set -e
 CONFIG="/paperclip/instances/default/config.json"
@@ -491,8 +489,22 @@ if [ -f "$CONFIG" ]; then
   exit 0
 fi
 echo "Running initial onboarding..."
-pnpm paperclipai onboard --yes --config "$CONFIG"
-echo "Onboarding complete."
+# Run onboard in background; it will start the server after creating config
+pnpm paperclipai onboard --yes &
+ONBOARD_PID=$!
+# Wait for the config file to appear
+for i in $(seq 1 120); do
+  if [ -f "$CONFIG" ]; then
+    echo "Config created. Stopping onboard process."
+    kill $ONBOARD_PID 2>/dev/null || true
+    wait $ONBOARD_PID 2>/dev/null || true
+    exit 0
+  fi
+  sleep 1
+done
+echo "Timed out waiting for config file."
+kill $ONBOARD_PID 2>/dev/null || true
+exit 1
 `
 
 	return corev1.Container{
