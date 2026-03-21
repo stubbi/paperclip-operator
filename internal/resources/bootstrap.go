@@ -73,7 +73,7 @@ SIGNUP_STATUS=$(curl -sS -o /tmp/signup.json -w '%%{http_code}' \
   -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
   -H "Content-Type: application/json" \
   -H "Origin: $SERVER_URL" \
-  -X POST "$SVC_URL/api/auth/sign-up/email" \
+  -X POST "$SERVER_URL/api/auth/sign-up/email" \
   -d "{\"name\":\"%s\",\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}") || true
 
 if echo "$SIGNUP_STATUS" | grep -q '^2'; then
@@ -84,7 +84,7 @@ else
     -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
     -H "Content-Type: application/json" \
     -H "Origin: $SERVER_URL" \
-    -X POST "$SVC_URL/api/auth/sign-in/email" \
+    -X POST "$SERVER_URL/api/auth/sign-in/email" \
     -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}") || true
   if echo "$SIGNIN_STATUS" | grep -q '^2'; then
     echo "Signed in as existing admin."
@@ -95,7 +95,7 @@ else
 fi
 
 # Step 2: Check if instance is already bootstrapped
-HEALTH=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" "$SVC_URL/api/health" 2>/dev/null) || true
+HEALTH=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" "$SERVER_URL/api/health" 2>/dev/null) || true
 if echo "$HEALTH" | grep -q '"bootstrapStatus":"ready"'; then
   echo "Instance already bootstrapped. Nothing to do."
   rm -f "$COOKIE_JAR"
@@ -120,7 +120,7 @@ ACCEPT_STATUS=$(curl -sS -o /tmp/accept.json -w '%%{http_code}' \
   -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
   -H "Content-Type: application/json" \
   -H "Origin: $SERVER_URL" \
-  -X POST "$SVC_URL/api/invites/$INVITE_TOKEN/accept" \
+  -X POST "$SERVER_URL/api/invites/$INVITE_TOKEN/accept" \
   -d '{"requestType":"human"}') || true
 
 if echo "$ACCEPT_STATUS" | grep -q '^2'; then
