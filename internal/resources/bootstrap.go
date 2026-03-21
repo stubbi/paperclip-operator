@@ -46,17 +46,19 @@ func BuildBootstrapJob(instance *paperclipv1alpha1.Instance) *batchv1.Job {
 set -e
 
 SERVER_URL="%s"
-HEALTH_URL="http://%s.%s.svc.cluster.local:%d/api/health"
+SVC_URL="http://%s.%s.svc.cluster.local:%d"
 
 echo "Waiting for Paperclip server..."
 for i in $(seq 1 60); do
-  if wget -q --spider "$HEALTH_URL" 2>/dev/null || wget -q -O /dev/null "$HEALTH_URL" 2>/dev/null; then
-    echo "Server is ready."
+  # Accept any HTTP response (including 403 in authenticated mode)
+  if wget -q -O /dev/null "$SVC_URL/" 2>/dev/null; then
+    echo "Server is ready (HTTP 200)."
     break
   fi
-  # TCP check as fallback (authenticated mode returns 403)
-  if wget -q --spider "http://%s.%s.svc.cluster.local:%d/" 2>/dev/null; then
-    echo "Server is ready (TCP)."
+  # wget returns non-zero for 4xx/5xx, but the server is still up
+  HTTP_CODE=$(wget --server-response -q -O /dev/null "$SVC_URL/" 2>&1 | grep "HTTP/" | tail -1 | awk '{print $2}') || true
+  if [ -n "$HTTP_CODE" ] && [ "$HTTP_CODE" -gt 0 ] 2>/dev/null; then
+    echo "Server is ready (HTTP $HTTP_CODE)."
     break
   fi
   echo "Waiting... ($i/60)"
@@ -99,7 +101,6 @@ else
 fi
 `,
 		baseURL,
-		svcName, instance.Namespace, port,
 		svcName, instance.Namespace, port,
 		adminName,
 	)
