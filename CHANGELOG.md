@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.3.0...v0.4.0) (2026-03-23)
+
+
+### Features
+
+* cloud sandbox support — RBAC, CRD, and env var injection ([#9](https://github.com/paperclipinc/paperclip-operator/issues/9)) ([5c7cfca](https://github.com/paperclipinc/paperclip-operator/commit/5c7cfca8965c60479bdec5042c925d2058fde7c5))
+
 ## [0.3.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.2.0...v0.3.0) (2026-03-23)
 
 
