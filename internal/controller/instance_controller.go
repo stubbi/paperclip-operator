@@ -27,6 +27,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,6 +86,7 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile moves the cluster state toward the desired state defined by the Instance CR.
 //
@@ -160,6 +162,13 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if instance.Spec.Security.RBAC.Create {
 		if err := r.reconcileServiceAccount(ctx, instance); err != nil {
 			return r.handleError(ctx, instance, "ServiceAccount", err)
+		}
+	}
+
+	// 1.5. Sandbox RBAC (if cloud sandbox enabled)
+	if cs := instance.Spec.Adapters.CloudSandbox; cs != nil && cs.Enabled {
+		if err := r.reconcileSandboxRBAC(ctx, instance); err != nil {
+			return r.handleError(ctx, instance, "SandboxRBAC", err)
 		}
 	}
 
@@ -272,6 +281,51 @@ func (r *InstanceReconciler) reconcileServiceAccount(ctx context.Context, instan
 	}
 
 	instance.Status.ManagedResources.ServiceAccount = obj.Name
+	return nil
+}
+
+func (r *InstanceReconciler) reconcileSandboxRBAC(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	cs := instance.Spec.Adapters.CloudSandbox
+	namespace := cs.Namespace
+	if namespace == "" {
+		namespace = instance.Namespace
+	}
+
+	// Role
+	desiredRole := resources.BuildSandboxRole(instance, namespace)
+	roleObj := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desiredRole.Name,
+			Namespace: desiredRole.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, roleObj, func() error {
+		roleObj.Labels = desiredRole.Labels
+		roleObj.Rules = desiredRole.Rules
+		return controllerutil.SetControllerReference(instance, roleObj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling sandbox Role: %w", err)
+	}
+
+	// RoleBinding
+	desiredBinding := resources.BuildSandboxRoleBinding(instance, namespace)
+	bindingObj := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desiredBinding.Name,
+			Namespace: desiredBinding.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, bindingObj, func() error {
+		bindingObj.Labels = desiredBinding.Labels
+		bindingObj.RoleRef = desiredBinding.RoleRef
+		bindingObj.Subjects = desiredBinding.Subjects
+		return controllerutil.SetControllerReference(instance, bindingObj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling sandbox RoleBinding: %w", err)
+	}
+
 	return nil
 }
 
@@ -773,6 +827,8 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Secret{}).
 		Owns(&networkingv1.Ingress{}).
 		Owns(&networkingv1.NetworkPolicy{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
 		Named("instance").
 		Complete(r)
 }

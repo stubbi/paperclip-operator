@@ -352,6 +352,36 @@ type AdaptersSpec struct {
 	// The Secret should contain keys like ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.
 	// +optional
 	APIKeysSecretRef *corev1.LocalObjectReference `json:"apiKeysSecretRef,omitempty"`
+
+	// CloudSandbox configures cloud-based agent execution in isolated Kubernetes pods.
+	// +optional
+	CloudSandbox *CloudSandboxSpec `json:"cloudSandbox,omitempty"`
+}
+
+// CloudSandboxSpec configures cloud sandbox execution for agent runtimes.
+type CloudSandboxSpec struct {
+	// Enabled controls whether cloud sandbox execution is available.
+	// +kubebuilder:default=false
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// DefaultImage is the default agent runtime container image.
+	// +kubebuilder:default="ghcr.io/paperclipinc/agent-multi:latest"
+	// +optional
+	DefaultImage string `json:"defaultImage,omitempty"`
+
+	// Namespace is the namespace for sandbox pods. Defaults to the instance namespace.
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// IdleTimeoutMin is how long (in minutes) a sandbox pod can be idle before being reaped.
+	// +kubebuilder:default=30
+	// +optional
+	IdleTimeoutMin int32 `json:"idleTimeoutMin,omitempty"`
+
+	// Resources specifies default compute resources for sandbox pods.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // ConnectionsSpec configures third-party OAuth provider credentials.
