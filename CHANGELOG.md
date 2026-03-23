@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.2.0...v0.3.0) (2026-03-23)
+
+
+### Features
+
+* add connections spec for third-party OAuth credentials ([#6](https://github.com/paperclipinc/paperclip-operator/issues/6)) ([34add3f](https://github.com/paperclipinc/paperclip-operator/commit/34add3f06f2319dca8f495baf859bda6ec8e5b4e))
+* automatic image updates via OCI registry digest polling ([#8](https://github.com/paperclipinc/paperclip-operator/issues/8)) ([90858c1](https://github.com/paperclipinc/paperclip-operator/commit/90858c14f4a305db462c28e647f8dcb3e70a1b0e))
+
 ## [0.2.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.1.0...v0.2.0) (2026-03-21)
 
 
