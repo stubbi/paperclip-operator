@@ -3630,6 +3630,22 @@ spec:
               image:
                 description: Image specifies the Paperclip container image to deploy.
                 properties:
+                  autoUpdate:
+                    description: AutoUpdate enables automatic image updates by polling
+                      the registry for new digests.
+                    properties:
+                      enabled:
+                        default: false
+                        description: Enabled controls whether auto-update polling
+                          is active.
+                        type: boolean
+                      interval:
+                        default: 5m
+                        description: Interval is the polling interval (e.g. "5m",
+                          "1h"). Minimum is 1m.
+                        pattern: ^\d+(s|m|h)$
+                        type: string
+                    type: object
                   digest:
                     description: Digest overrides the tag with an image digest (e.g.
                       sha256:abc...).
@@ -7404,6 +7420,29 @@ spec:
           status:
             description: InstanceStatus defines the observed state of Instance.
             properties:
+              autoUpdate:
+                description: AutoUpdate tracks the state of automatic image update
+                  checks.
+                properties:
+                  lastCheckTime:
+                    description: LastCheckTime is when the operator last queried the
+                      registry.
+                    format: date-time
+                    type: string
+                  lastError:
+                    description: LastError records the most recent error from a registry
+                      check, if any.
+                    type: string
+                  lastUpdateTime:
+                    description: LastUpdateTime is when the digest last changed and
+                      a rollout was triggered.
+                    format: date-time
+                    type: string
+                  resolvedDigest:
+                    description: ResolvedDigest is the most recently observed digest
+                      for the configured tag.
+                    type: string
+                type: object
               backup:
                 description: Backup tracks the state of the latest backup operation.
                 properties:

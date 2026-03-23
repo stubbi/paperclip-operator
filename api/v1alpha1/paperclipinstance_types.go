@@ -155,6 +155,24 @@ type ImageSpec struct {
 	// PullSecrets specifies image pull secrets.
 	// +optional
 	PullSecrets []corev1.LocalObjectReference `json:"pullSecrets,omitempty"`
+
+	// AutoUpdate enables automatic image updates by polling the registry for new digests.
+	// +optional
+	AutoUpdate *AutoUpdateSpec `json:"autoUpdate,omitempty"`
+}
+
+// AutoUpdateSpec configures automatic image update polling.
+type AutoUpdateSpec struct {
+	// Enabled controls whether auto-update polling is active.
+	// +kubebuilder:default=false
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// Interval is the polling interval (e.g. "5m", "1h"). Minimum is 1m.
+	// +kubebuilder:default="5m"
+	// +kubebuilder:validation:Pattern=`^\d+(s|m|h)$`
+	// +optional
+	Interval string `json:"interval,omitempty"`
 }
 
 // DeploymentSpec controls deployment mode and exposure.
@@ -727,6 +745,10 @@ type InstanceStatus struct {
 	// Restore tracks the state of the latest restore operation.
 	// +optional
 	Restore *RestoreStatus `json:"restore,omitempty"`
+
+	// AutoUpdate tracks the state of automatic image update checks.
+	// +optional
+	AutoUpdate *AutoUpdateStatus `json:"autoUpdate,omitempty"`
 }
 
 // ManagedResources tracks the names of managed Kubernetes resources.
@@ -773,6 +795,25 @@ type RestoreStatus struct {
 	// Result is the result of the restore.
 	// +optional
 	Result string `json:"result,omitempty"`
+}
+
+// AutoUpdateStatus tracks the state of automatic image update checks.
+type AutoUpdateStatus struct {
+	// LastCheckTime is when the operator last queried the registry.
+	// +optional
+	LastCheckTime *metav1.Time `json:"lastCheckTime,omitempty"`
+
+	// ResolvedDigest is the most recently observed digest for the configured tag.
+	// +optional
+	ResolvedDigest string `json:"resolvedDigest,omitempty"`
+
+	// LastUpdateTime is when the digest last changed and a rollout was triggered.
+	// +optional
+	LastUpdateTime *metav1.Time `json:"lastUpdateTime,omitempty"`
+
+	// LastError records the most recent error from a registry check, if any.
+	// +optional
+	LastError string `json:"lastError,omitempty"`
 }
 
 // +kubebuilder:object:root=true

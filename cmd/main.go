@@ -39,6 +39,7 @@ import (
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 	"github.com/paperclipinc/paperclip-operator/internal/controller"
+	"github.com/paperclipinc/paperclip-operator/internal/registry"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -203,9 +204,10 @@ func main() {
 	}
 
 	if err := (&controller.InstanceReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("paperclip-operator"),
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		Recorder:       mgr.GetEventRecorderFor("paperclip-operator"),
+		RegistryClient: registry.NewClient(nil),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Instance")
 		os.Exit(1)

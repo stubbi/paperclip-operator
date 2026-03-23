@@ -53,7 +53,7 @@ func newTestInstance(name string) *paperclipv1alpha1.Instance {
 
 func TestBuildStatefulSet(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 
 	if sts.Name != "my-paperclip" {
 		t.Errorf("expected StatefulSet name 'my-paperclip', got %q", sts.Name)
@@ -123,7 +123,7 @@ func TestBuildStatefulSet(t *testing.T) {
 func TestBuildStatefulSetWithDigest(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	instance.Spec.Image.Digest = "sha256:abc123"
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 
 	container := sts.Spec.Template.Spec.Containers[0]
 	expected := "ghcr.io/paperclipinc/paperclip@sha256:abc123"
@@ -136,7 +136,7 @@ func TestBuildStatefulSetEnvVars(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	instance.Spec.Deployment.PublicURL = "https://paperclip.example.com"
 	instance.Spec.Deployment.AllowedHostnames = []string{"paperclip.example.com"}
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 
 	container := sts.Spec.Template.Spec.Containers[0]
 
@@ -394,7 +394,7 @@ func TestBuildStatefulSetConnectionsEnvVars(t *testing.T) {
 	instance.Spec.Connections = &paperclipv1alpha1.ConnectionsSpec{
 		CredentialsSecretRef: corev1.LocalObjectReference{Name: "oauth-creds"},
 	}
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 	container := sts.Spec.Template.Spec.Containers[0]
 
 	var found bool
@@ -423,7 +423,7 @@ func TestBuildStatefulSetConnectionsCustomKey(t *testing.T) {
 		CredentialsSecretRef: corev1.LocalObjectReference{Name: "oauth-creds"},
 		CredentialsKey:       "custom-key",
 	}
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 	container := sts.Spec.Template.Spec.Containers[0]
 
 	for _, env := range container.Env {
@@ -443,7 +443,7 @@ func TestBuildStatefulSetConnectionsWithProvidersCatalog(t *testing.T) {
 		CredentialsSecretRef: corev1.LocalObjectReference{Name: "oauth-creds"},
 		ProvidersConfigRef:   &corev1.LocalObjectReference{Name: "custom-providers"},
 	}
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 	container := sts.Spec.Template.Spec.Containers[0]
 
 	var foundCreds, foundProviders bool
@@ -472,13 +472,26 @@ func TestBuildStatefulSetConnectionsWithProvidersCatalog(t *testing.T) {
 func TestBuildStatefulSetNoConnections(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	// Connections is nil by default
-	sts := BuildStatefulSet(instance)
+	sts := BuildStatefulSet(instance, nil)
 	container := sts.Spec.Template.Spec.Containers[0]
 
 	for _, env := range container.Env {
 		if env.Name == EnvOAuthCredentials || env.Name == EnvOAuthProviders {
 			t.Errorf("unexpected OAuth env var %q when connections is nil", env.Name)
 		}
+	}
+}
+
+func TestBuildStatefulSetAutoUpdateAnnotation(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	extraAnnotations := map[string]string{
+		"paperclip.inc/resolved-digest": "sha256:abc123",
+	}
+	sts := BuildStatefulSet(instance, extraAnnotations)
+
+	got := sts.Spec.Template.Annotations["paperclip.inc/resolved-digest"]
+	if got != "sha256:abc123" {
+		t.Errorf("expected digest annotation 'sha256:abc123', got %q", got)
 	}
 }
 
