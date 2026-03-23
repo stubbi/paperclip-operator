@@ -46,6 +46,11 @@ const (
 	// DefaultPaperclipEntrypoint is the default Paperclip container entrypoint.
 	// Used when the operator needs to inject a shell wrapper (e.g., heartbeat leader election).
 	DefaultPaperclipEntrypoint = `node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js`
+
+	// EnvOAuthCredentials is the environment variable for OAuth provider credentials JSON.
+	EnvOAuthCredentials = "PAPERCLIP_OAUTH_CREDENTIALS" //nolint:gosec // env var name, not a credential
+	// EnvOAuthProviders is the environment variable for custom OAuth provider definitions.
+	EnvOAuthProviders = "PAPERCLIP_OAUTH_PROVIDERS"
 )
 
 // Ptr returns a pointer to the given value.

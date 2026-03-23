@@ -399,7 +399,7 @@ func TestBuildStatefulSetConnectionsEnvVars(t *testing.T) {
 
 	var found bool
 	for _, env := range container.Env {
-		if env.Name == "PAPERCLIP_OAUTH_CREDENTIALS" {
+		if env.Name == EnvOAuthCredentials {
 			found = true
 			if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
 				t.Fatal("expected SecretKeyRef for PAPERCLIP_OAUTH_CREDENTIALS")
@@ -407,7 +407,7 @@ func TestBuildStatefulSetConnectionsEnvVars(t *testing.T) {
 			if env.ValueFrom.SecretKeyRef.Name != "oauth-creds" {
 				t.Errorf("expected secret name 'oauth-creds', got %q", env.ValueFrom.SecretKeyRef.Name)
 			}
-			if env.ValueFrom.SecretKeyRef.Key != "PAPERCLIP_OAUTH_CREDENTIALS" {
+			if env.ValueFrom.SecretKeyRef.Key != EnvOAuthCredentials {
 				t.Errorf("expected default key 'PAPERCLIP_OAUTH_CREDENTIALS', got %q", env.ValueFrom.SecretKeyRef.Key)
 			}
 		}
@@ -427,7 +427,7 @@ func TestBuildStatefulSetConnectionsCustomKey(t *testing.T) {
 	container := sts.Spec.Template.Spec.Containers[0]
 
 	for _, env := range container.Env {
-		if env.Name == "PAPERCLIP_OAUTH_CREDENTIALS" {
+		if env.Name == EnvOAuthCredentials {
 			if env.ValueFrom.SecretKeyRef.Key != "custom-key" {
 				t.Errorf("expected key 'custom-key', got %q", env.ValueFrom.SecretKeyRef.Key)
 			}
@@ -448,10 +448,10 @@ func TestBuildStatefulSetConnectionsWithProvidersCatalog(t *testing.T) {
 
 	var foundCreds, foundProviders bool
 	for _, env := range container.Env {
-		if env.Name == "PAPERCLIP_OAUTH_CREDENTIALS" {
+		if env.Name == EnvOAuthCredentials {
 			foundCreds = true
 		}
-		if env.Name == "PAPERCLIP_OAUTH_PROVIDERS" {
+		if env.Name == EnvOAuthProviders {
 			foundProviders = true
 			if env.ValueFrom == nil || env.ValueFrom.ConfigMapKeyRef == nil {
 				t.Fatal("expected ConfigMapKeyRef for PAPERCLIP_OAUTH_PROVIDERS")
@@ -476,7 +476,7 @@ func TestBuildStatefulSetNoConnections(t *testing.T) {
 	container := sts.Spec.Template.Spec.Containers[0]
 
 	for _, env := range container.Env {
-		if env.Name == "PAPERCLIP_OAUTH_CREDENTIALS" || env.Name == "PAPERCLIP_OAUTH_PROVIDERS" {
+		if env.Name == EnvOAuthCredentials || env.Name == EnvOAuthProviders {
 			t.Errorf("unexpected OAuth env var %q when connections is nil", env.Name)
 		}
 	}

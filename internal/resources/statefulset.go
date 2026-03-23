@@ -321,10 +321,10 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		conn := instance.Spec.Connections
 		key := conn.CredentialsKey
 		if key == "" {
-			key = "PAPERCLIP_OAUTH_CREDENTIALS"
+			key = EnvOAuthCredentials
 		}
 		vars = append(vars, corev1.EnvVar{
-			Name: "PAPERCLIP_OAUTH_CREDENTIALS",
+			Name: EnvOAuthCredentials,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: conn.CredentialsSecretRef,
@@ -334,11 +334,11 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		})
 		if conn.ProvidersConfigRef != nil {
 			vars = append(vars, corev1.EnvVar{
-				Name: "PAPERCLIP_OAUTH_PROVIDERS",
+				Name: EnvOAuthProviders,
 				ValueFrom: &corev1.EnvVarSource{
 					ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
 						LocalObjectReference: *conn.ProvidersConfigRef,
-						Key:                  "PAPERCLIP_OAUTH_PROVIDERS",
+						Key:                  EnvOAuthProviders,
 						Optional:             Ptr(true),
 					},
 				},
@@ -382,16 +382,12 @@ func buildVolumes(instance *paperclipv1alpha1.Instance) []corev1.Volume {
 }
 
 func buildVolumeMounts(instance *paperclipv1alpha1.Instance) []corev1.VolumeMount {
-	mounts := []corev1.VolumeMount{
-		{
-			Name:      DataVolumeName,
-			MountPath: DataMountPath,
-		},
-	}
-
-	// Extra volume mounts
+	mounts := make([]corev1.VolumeMount, 0, 1+len(instance.Spec.ExtraVolumeMounts))
+	mounts = append(mounts, corev1.VolumeMount{
+		Name:      DataVolumeName,
+		MountPath: DataMountPath,
+	})
 	mounts = append(mounts, instance.Spec.ExtraVolumeMounts...)
-
 	return mounts
 }
 
