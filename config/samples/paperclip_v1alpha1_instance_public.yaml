@@ -53,6 +53,10 @@ spec:
     apiKeysSecretRef:
       name: paperclip-api-keys
 
+  connections:
+    credentialsSecretRef:
+      name: paperclip-oauth-credentials
+
   security:
     networkPolicy:
       enabled: true
@@ -108,3 +112,25 @@ spec:
     startup:
       failureThreshold: 60
       periodSeconds: 5
+---
+# OAuth credentials for third-party connections (GitHub, Slack, etc.)
+# Register OAuth apps with each provider and set the callback URL to:
+#   https://paperclip.example.com/api/connections/callback
+apiVersion: v1
+kind: Secret
+metadata:
+  name: paperclip-oauth-credentials
+  namespace: paperclip
+type: Opaque
+stringData:
+  PAPERCLIP_OAUTH_CREDENTIALS: |
+    {
+      "github": {
+        "clientId": "Iv1.xxxxxxxxxxxxxxxx",
+        "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "slack": {
+        "clientId": "1234567890.1234567890",
+        "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    }

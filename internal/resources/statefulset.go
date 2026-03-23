@@ -316,6 +316,36 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		})
 	}
 
+	// OAuth connections
+	if instance.Spec.Connections != nil {
+		conn := instance.Spec.Connections
+		key := conn.CredentialsKey
+		if key == "" {
+			key = "PAPERCLIP_OAUTH_CREDENTIALS"
+		}
+		vars = append(vars, corev1.EnvVar{
+			Name: "PAPERCLIP_OAUTH_CREDENTIALS",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: conn.CredentialsSecretRef,
+					Key:                  key,
+				},
+			},
+		})
+		if conn.ProvidersConfigRef != nil {
+			vars = append(vars, corev1.EnvVar{
+				Name: "PAPERCLIP_OAUTH_PROVIDERS",
+				ValueFrom: &corev1.EnvVarSource{
+					ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+						LocalObjectReference: *conn.ProvidersConfigRef,
+						Key:                  "PAPERCLIP_OAUTH_PROVIDERS",
+						Optional:             Ptr(true),
+					},
+				},
+			})
+		}
+	}
+
 	// Logging
 	if instance.Spec.Observability.Logging.Level != "" {
 		vars = append(vars, corev1.EnvVar{Name: "LOG_LEVEL", Value: instance.Spec.Observability.Logging.Level})
