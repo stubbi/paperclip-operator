@@ -48,7 +48,7 @@ const (
 	DefaultPaperclipEntrypoint = `node --import ./server/node_modules/tsx/dist/loader.mjs server/dist/index.js`
 
 	// EnvOAuthCredentials is the environment variable for OAuth provider credentials JSON.
-	EnvOAuthCredentials = "PAPERCLIP_OAUTH_CREDENTIALS" //nolint:gosec // env var name, not a credential
+	EnvOAuthCredentials = "PAPERCLIP_OAUTH_CREDENTIALS" // #nosec G101 -- env var name, not a credential //nolint:gosec
 	// EnvOAuthProviders is the environment variable for custom OAuth provider definitions.
 	EnvOAuthProviders = "PAPERCLIP_OAUTH_PROVIDERS"
 )
