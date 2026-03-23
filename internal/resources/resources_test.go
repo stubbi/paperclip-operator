@@ -495,6 +495,88 @@ func TestBuildStatefulSetAutoUpdateAnnotation(t *testing.T) {
 	}
 }
 
+func TestBuildStatefulSetCloudSandboxEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled:        true,
+		DefaultImage:   "ghcr.io/paperclipinc/agent-multi:v1.0",
+		IdleTimeoutMin: 15,
+	}
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	envMap := make(map[string]string)
+	for _, env := range container.Env {
+		if env.Value != "" {
+			envMap[env.Name] = env.Value
+		}
+	}
+
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_ENABLED"] != "true" {
+		t.Error("expected PAPERCLIP_CLOUD_SANDBOX_ENABLED=true")
+	}
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_NAMESPACE"] != "test-ns" {
+		t.Errorf("expected namespace test-ns, got %q", envMap["PAPERCLIP_CLOUD_SANDBOX_NAMESPACE"])
+	}
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_DEFAULT_IMAGE"] != "ghcr.io/paperclipinc/agent-multi:v1.0" {
+		t.Error("expected default image")
+	}
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_IDLE_TIMEOUT_MIN"] != "15" {
+		t.Error("expected idle timeout 15")
+	}
+}
+
+func TestBuildStatefulSetNoCloudSandbox(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	for _, env := range container.Env {
+		if env.Name == "PAPERCLIP_CLOUD_SANDBOX_ENABLED" {
+			t.Error("unexpected cloud sandbox env var when not configured")
+		}
+	}
+}
+
+func TestBuildSandboxRole(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	role := BuildSandboxRole(instance, "test-ns")
+
+	if role.Name != "my-paperclip-sandbox" {
+		t.Errorf("expected name my-paperclip-sandbox, got %q", role.Name)
+	}
+	if role.Namespace != "test-ns" {
+		t.Errorf("expected namespace test-ns, got %q", role.Namespace)
+	}
+	if len(role.Rules) != 4 {
+		t.Errorf("expected 4 rules (pods, pods/exec, pods/log, networkpolicies), got %d", len(role.Rules))
+	}
+	// Verify pods rule has all required verbs
+	podsRule := role.Rules[0]
+	expectedVerbs := []string{"create", "get", "list", "watch", "delete", "patch"}
+	if len(podsRule.Verbs) != len(expectedVerbs) {
+		t.Errorf("expected %d verbs for pods, got %d", len(expectedVerbs), len(podsRule.Verbs))
+	}
+}
+
+func TestBuildSandboxRoleBinding(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	binding := BuildSandboxRoleBinding(instance, "test-ns")
+
+	if binding.Name != "my-paperclip-sandbox" {
+		t.Errorf("expected name my-paperclip-sandbox, got %q", binding.Name)
+	}
+	if binding.RoleRef.Name != "my-paperclip-sandbox" {
+		t.Error("expected role ref to match sandbox role name")
+	}
+	if len(binding.Subjects) != 1 {
+		t.Fatalf("expected 1 subject, got %d", len(binding.Subjects))
+	}
+	if binding.Subjects[0].Name != "my-paperclip" {
+		t.Error("expected subject to be instance service account")
+	}
+}
+
 func TestLabels(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	labels := Labels(instance)
