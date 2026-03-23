@@ -389,6 +389,99 @@ func TestBuildPDB(t *testing.T) {
 	}
 }
 
+func TestBuildStatefulSetConnectionsEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Connections = &paperclipv1alpha1.ConnectionsSpec{
+		CredentialsSecretRef: corev1.LocalObjectReference{Name: "oauth-creds"},
+	}
+	sts := BuildStatefulSet(instance)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	var found bool
+	for _, env := range container.Env {
+		if env.Name == EnvOAuthCredentials {
+			found = true
+			if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
+				t.Fatal("expected SecretKeyRef for PAPERCLIP_OAUTH_CREDENTIALS")
+			}
+			if env.ValueFrom.SecretKeyRef.Name != "oauth-creds" {
+				t.Errorf("expected secret name 'oauth-creds', got %q", env.ValueFrom.SecretKeyRef.Name)
+			}
+			if env.ValueFrom.SecretKeyRef.Key != EnvOAuthCredentials {
+				t.Errorf("expected default key 'PAPERCLIP_OAUTH_CREDENTIALS', got %q", env.ValueFrom.SecretKeyRef.Key)
+			}
+		}
+	}
+	if !found {
+		t.Error("expected PAPERCLIP_OAUTH_CREDENTIALS env var")
+	}
+}
+
+func TestBuildStatefulSetConnectionsCustomKey(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Connections = &paperclipv1alpha1.ConnectionsSpec{
+		CredentialsSecretRef: corev1.LocalObjectReference{Name: "oauth-creds"},
+		CredentialsKey:       "custom-key",
+	}
+	sts := BuildStatefulSet(instance)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	for _, env := range container.Env {
+		if env.Name == EnvOAuthCredentials {
+			if env.ValueFrom.SecretKeyRef.Key != "custom-key" {
+				t.Errorf("expected key 'custom-key', got %q", env.ValueFrom.SecretKeyRef.Key)
+			}
+			return
+		}
+	}
+	t.Error("expected PAPERCLIP_OAUTH_CREDENTIALS env var")
+}
+
+func TestBuildStatefulSetConnectionsWithProvidersCatalog(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Connections = &paperclipv1alpha1.ConnectionsSpec{
+		CredentialsSecretRef: corev1.LocalObjectReference{Name: "oauth-creds"},
+		ProvidersConfigRef:   &corev1.LocalObjectReference{Name: "custom-providers"},
+	}
+	sts := BuildStatefulSet(instance)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	var foundCreds, foundProviders bool
+	for _, env := range container.Env {
+		if env.Name == EnvOAuthCredentials {
+			foundCreds = true
+		}
+		if env.Name == EnvOAuthProviders {
+			foundProviders = true
+			if env.ValueFrom == nil || env.ValueFrom.ConfigMapKeyRef == nil {
+				t.Fatal("expected ConfigMapKeyRef for PAPERCLIP_OAUTH_PROVIDERS")
+			}
+			if env.ValueFrom.ConfigMapKeyRef.Name != "custom-providers" {
+				t.Errorf("expected configmap name 'custom-providers', got %q", env.ValueFrom.ConfigMapKeyRef.Name)
+			}
+		}
+	}
+	if !foundCreds {
+		t.Error("expected PAPERCLIP_OAUTH_CREDENTIALS env var")
+	}
+	if !foundProviders {
+		t.Error("expected PAPERCLIP_OAUTH_PROVIDERS env var")
+	}
+}
+
+func TestBuildStatefulSetNoConnections(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	// Connections is nil by default
+	sts := BuildStatefulSet(instance)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	for _, env := range container.Env {
+		if env.Name == EnvOAuthCredentials || env.Name == EnvOAuthProviders {
+			t.Errorf("unexpected OAuth env var %q when connections is nil", env.Name)
+		}
+	}
+}
+
 func TestLabels(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	labels := Labels(instance)

@@ -35,6 +35,10 @@ spec:
     apiKeysSecretRef:
       name: paperclip-api-keys
 
+  # connections:
+  #   credentialsSecretRef:
+  #     name: paperclip-oauth-credentials
+
   security:
     networkPolicy:
       enabled: true

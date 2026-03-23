@@ -1397,6 +1397,55 @@ spec:
                 required:
                 - schedule
                 type: object
+              connections:
+                description: |-
+                  Connections configures third-party OAuth provider credentials for
+                  the Paperclip connections system (GitHub, GitLab, Slack, etc.).
+                properties:
+                  credentialsKey:
+                    default: PAPERCLIP_OAUTH_CREDENTIALS
+                    description: |-
+                      CredentialsKey is the key within the Secret that holds the JSON credentials.
+                      Defaults to "PAPERCLIP_OAUTH_CREDENTIALS".
+                    type: string
+                  credentialsSecretRef:
+                    description: |-
+                      CredentialsSecretRef references a Secret containing OAuth client credentials.
+                      The Secret must contain a key (default "PAPERCLIP_OAUTH_CREDENTIALS") whose
+                      value is a JSON object mapping provider IDs to {clientId, clientSecret} pairs.
+                      Example: {"github":{"clientId":"...","clientSecret":"..."},"slack":{"clientId":"...","clientSecret":"..."}}
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  providersConfigRef:
+                    description: |-
+                      ProvidersConfigRef optionally references a ConfigMap containing a
+                      PAPERCLIP_OAUTH_PROVIDERS key with a JSON provider catalog to extend
+                      or override the built-in provider definitions at runtime.
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                required:
+                - credentialsSecretRef
+                type: object
               database:
                 description: Database configures the PostgreSQL connection.
                 properties:

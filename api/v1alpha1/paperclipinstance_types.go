@@ -60,6 +60,11 @@ type InstanceSpec struct {
 	// +optional
 	Adapters AdaptersSpec `json:"adapters,omitempty"`
 
+	// Connections configures third-party OAuth provider credentials for
+	// the Paperclip connections system (GitHub, GitLab, Slack, etc.).
+	// +optional
+	Connections *ConnectionsSpec `json:"connections,omitempty"`
+
 	// Plugins lists plugins to install.
 	// +optional
 	Plugins []PluginRef `json:"plugins,omitempty"`
@@ -329,6 +334,30 @@ type AdaptersSpec struct {
 	// The Secret should contain keys like ANTHROPIC_API_KEY, OPENAI_API_KEY, etc.
 	// +optional
 	APIKeysSecretRef *corev1.LocalObjectReference `json:"apiKeysSecretRef,omitempty"`
+}
+
+// ConnectionsSpec configures third-party OAuth provider credentials.
+// The operator injects credentials as PAPERCLIP_OAUTH_CREDENTIALS from
+// the referenced Secret, enabling the Paperclip connections system to
+// manage OAuth flows and token lifecycle for external services.
+type ConnectionsSpec struct {
+	// CredentialsSecretRef references a Secret containing OAuth client credentials.
+	// The Secret must contain a key (default "PAPERCLIP_OAUTH_CREDENTIALS") whose
+	// value is a JSON object mapping provider IDs to {clientId, clientSecret} pairs.
+	// Example: {"github":{"clientId":"...","clientSecret":"..."},"slack":{"clientId":"...","clientSecret":"..."}}
+	CredentialsSecretRef corev1.LocalObjectReference `json:"credentialsSecretRef"`
+
+	// CredentialsKey is the key within the Secret that holds the JSON credentials.
+	// Defaults to "PAPERCLIP_OAUTH_CREDENTIALS".
+	// +kubebuilder:default="PAPERCLIP_OAUTH_CREDENTIALS"
+	// +optional
+	CredentialsKey string `json:"credentialsKey,omitempty"`
+
+	// ProvidersConfigRef optionally references a ConfigMap containing a
+	// PAPERCLIP_OAUTH_PROVIDERS key with a JSON provider catalog to extend
+	// or override the built-in provider definitions at runtime.
+	// +optional
+	ProvidersConfigRef *corev1.LocalObjectReference `json:"providersConfigRef,omitempty"`
 }
 
 // PluginRef references a Paperclip plugin.
