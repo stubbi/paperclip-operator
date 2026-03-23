@@ -548,8 +548,8 @@ func TestBuildSandboxRole(t *testing.T) {
 	if role.Namespace != "test-ns" {
 		t.Errorf("expected namespace test-ns, got %q", role.Namespace)
 	}
-	if len(role.Rules) != 3 {
-		t.Errorf("expected 3 rules, got %d", len(role.Rules))
+	if len(role.Rules) != 4 {
+		t.Errorf("expected 4 rules (pods, pods/exec, pods/log, networkpolicies), got %d", len(role.Rules))
 	}
 	// Verify pods rule has all required verbs
 	podsRule := role.Rules[0]

@@ -36,6 +36,11 @@ func BuildSandboxRole(instance *paperclipv1alpha1.Instance, namespace string) *r
 				Resources: []string{"pods/log"},
 				Verbs:     []string{"get"},
 			},
+			{
+				APIGroups: []string{"networking.k8s.io"},
+				Resources: []string{"networkpolicies"},
+				Verbs:     []string{"create", "get", "update", "patch"},
+			},
 		},
 	}
 }
