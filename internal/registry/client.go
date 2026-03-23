@@ -76,7 +76,7 @@ func (c *Client) ResolveDigest(ctx context.Context, repo, tag string, dockerConf
 
 func (c *Client) doWithAuth(ctx context.Context, req *http.Request, host, name, username, password string) (*http.Response, error) {
 	// Try direct request first (works for public repos or if credentials are sufficient as basic auth)
-	resp, err := c.HTTP.Do(req)
+	resp, err := c.HTTP.Do(req) // #nosec G704 -- URL from operator-configured registry
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (c *Client) doWithAuth(ctx context.Context, req *http.Request, host, name, 
 	// Retry with bearer token
 	retryReq := req.Clone(ctx)
 	retryReq.Header.Set("Authorization", "Bearer "+token)
-	return c.HTTP.Do(retryReq)
+	return c.HTTP.Do(retryReq) // #nosec G704 -- URL from operator-configured registry
 }
 
 func (c *Client) fetchToken(ctx context.Context, realm, service, scope, username, password string) (string, error) {
@@ -115,7 +115,7 @@ func (c *Client) fetchToken(ctx context.Context, realm, service, scope, username
 	}
 	tokenURL += "scope=" + scope
 
-	req, err := http.NewRequestWithContext(ctx, "GET", tokenURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", tokenURL, nil) // #nosec G704 -- realm URL from registry WWW-Authenticate
 	if err != nil {
 		return "", err
 	}
@@ -123,7 +123,7 @@ func (c *Client) fetchToken(ctx context.Context, realm, service, scope, username
 		req.SetBasicAuth(username, password)
 	}
 
-	resp, err := c.HTTP.Do(req)
+	resp, err := c.HTTP.Do(req) // #nosec G704 -- token endpoint from registry
 	if err != nil {
 		return "", err
 	}
