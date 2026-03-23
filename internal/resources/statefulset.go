@@ -12,7 +12,7 @@ import (
 )
 
 // BuildStatefulSet constructs the Paperclip server StatefulSet.
-func BuildStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.StatefulSet {
+func BuildStatefulSet(instance *paperclipv1alpha1.Instance, extraPodAnnotations map[string]string) *appsv1.StatefulSet {
 	labels := LabelsWithComponent(instance, "server")
 	selectorLabels := SelectorLabels(instance)
 
@@ -78,6 +78,9 @@ func BuildStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.StatefulSet 
 	// Pod annotations
 	podAnnotations := make(map[string]string)
 	for k, v := range instance.Spec.PodAnnotations {
+		podAnnotations[k] = v
+	}
+	for k, v := range extraPodAnnotations {
 		podAnnotations[k] = v
 	}
 

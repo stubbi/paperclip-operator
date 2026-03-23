@@ -39,6 +39,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
+	"github.com/paperclipinc/paperclip-operator/internal/registry"
 	"github.com/paperclipinc/paperclip-operator/internal/resources"
 )
 
@@ -54,13 +55,18 @@ const (
 	ConditionStatefulSetReady = "StatefulSetReady"
 	// ConditionServiceReady indicates the Service is ready.
 	ConditionServiceReady = "ServiceReady"
+
+	// AnnotationResolvedDigest is the pod template annotation that records the current resolved digest.
+	// Changing this annotation triggers a rolling restart.
+	AnnotationResolvedDigest = "paperclip.inc/resolved-digest"
 )
 
 // InstanceReconciler reconciles a Instance object.
 type InstanceReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme         *runtime.Scheme
+	Recorder       record.EventRecorder
+	RegistryClient *registry.Client
 }
 
 // +kubebuilder:rbac:groups=paperclip.inc,resources=instances,verbs=get;list;watch;create;update;patch;delete
@@ -171,8 +177,20 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 	}
 
+	// 3.5. Auto-update: check registry for new digest
+	autoUpdateRequeue := ctrl.Result{}
+	if r.RegistryClient != nil {
+		autoUpdateRequeue = r.reconcileAutoUpdate(ctx, instance)
+	}
+	var extraPodAnnotations map[string]string
+	if instance.Status.AutoUpdate != nil && instance.Status.AutoUpdate.ResolvedDigest != "" {
+		extraPodAnnotations = map[string]string{
+			AnnotationResolvedDigest: instance.Status.AutoUpdate.ResolvedDigest,
+		}
+	}
+
 	// 4. StatefulSet
-	if err := r.reconcileStatefulSet(ctx, instance); err != nil {
+	if err := r.reconcileStatefulSet(ctx, instance, extraPodAnnotations); err != nil {
 		return r.handleError(ctx, instance, "StatefulSet", err)
 	}
 
@@ -228,7 +246,11 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			"All managed resources reconciled successfully")
 	}
 
-	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
+	requeueAfter := 5 * time.Minute
+	if autoUpdateRequeue.RequeueAfter > 0 && autoUpdateRequeue.RequeueAfter < requeueAfter {
+		requeueAfter = autoUpdateRequeue.RequeueAfter
+	}
+	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
 func (r *InstanceReconciler) reconcileServiceAccount(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
@@ -370,8 +392,8 @@ func (r *InstanceReconciler) reconcilePVC(ctx context.Context, instance *papercl
 	return nil
 }
 
-func (r *InstanceReconciler) reconcileStatefulSet(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
-	desired := resources.BuildStatefulSet(instance)
+func (r *InstanceReconciler) reconcileStatefulSet(ctx context.Context, instance *paperclipv1alpha1.Instance, extraPodAnnotations map[string]string) error {
+	desired := resources.BuildStatefulSet(instance, extraPodAnnotations)
 	obj := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      desired.Name,
@@ -657,6 +679,87 @@ func generatePassword(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(bytes)[:length], nil
+}
+
+func (r *InstanceReconciler) reconcileAutoUpdate(ctx context.Context, instance *paperclipv1alpha1.Instance) ctrl.Result {
+	log := logf.FromContext(ctx)
+	autoUpdate := instance.Spec.Image.AutoUpdate
+
+	if autoUpdate == nil || !autoUpdate.Enabled {
+		instance.Status.AutoUpdate = nil
+		return ctrl.Result{}
+	}
+
+	interval, err := time.ParseDuration(autoUpdate.Interval)
+	if err != nil || interval < time.Minute {
+		interval = 5 * time.Minute
+	}
+
+	if instance.Status.AutoUpdate == nil {
+		instance.Status.AutoUpdate = &paperclipv1alpha1.AutoUpdateStatus{}
+	}
+
+	now := metav1.Now()
+	if instance.Status.AutoUpdate.LastCheckTime != nil {
+		elapsed := now.Sub(instance.Status.AutoUpdate.LastCheckTime.Time)
+		if elapsed < interval {
+			return ctrl.Result{RequeueAfter: interval - elapsed}
+		}
+	}
+
+	// Resolve credentials from imagePullSecrets
+	var dockerConfigJSON []byte
+	if len(instance.Spec.Image.PullSecrets) > 0 {
+		secret := &corev1.Secret{}
+		getErr := r.Get(ctx, types.NamespacedName{
+			Name:      instance.Spec.Image.PullSecrets[0].Name,
+			Namespace: instance.Namespace,
+		}, secret)
+		if getErr != nil {
+			log.Error(getErr, "Failed to get imagePullSecret for auto-update")
+			instance.Status.AutoUpdate.LastError = getErr.Error()
+			instance.Status.AutoUpdate.LastCheckTime = &now
+			return ctrl.Result{RequeueAfter: interval}
+		}
+		dockerConfigJSON = secret.Data[".dockerconfigjson"]
+	}
+
+	repo := instance.Spec.Image.Repository
+	if repo == "" {
+		repo = "ghcr.io/paperclipinc/paperclip"
+	}
+	tag := instance.Spec.Image.Tag
+	if tag == "" {
+		tag = "latest"
+	}
+
+	digest, err := r.RegistryClient.ResolveDigest(ctx, repo, tag, dockerConfigJSON)
+	instance.Status.AutoUpdate.LastCheckTime = &now
+
+	if err != nil {
+		log.Error(err, "Failed to resolve image digest", "repo", repo, "tag", tag)
+		instance.Status.AutoUpdate.LastError = err.Error()
+		if r.Recorder != nil {
+			r.Recorder.Eventf(instance, corev1.EventTypeWarning, "AutoUpdateCheckFailed",
+				"Failed to check registry for %s:%s: %v", repo, tag, err)
+		}
+		return ctrl.Result{RequeueAfter: interval}
+	}
+
+	instance.Status.AutoUpdate.LastError = ""
+	previousDigest := instance.Status.AutoUpdate.ResolvedDigest
+	if digest != previousDigest {
+		log.Info("New image digest detected", "repo", repo, "tag", tag,
+			"previousDigest", previousDigest, "newDigest", digest)
+		instance.Status.AutoUpdate.ResolvedDigest = digest
+		instance.Status.AutoUpdate.LastUpdateTime = &now
+		if r.Recorder != nil {
+			r.Recorder.Eventf(instance, corev1.EventTypeNormal, "AutoUpdateDigestChanged",
+				"New digest detected for %s:%s: %s", repo, tag, digest)
+		}
+	}
+
+	return ctrl.Result{RequeueAfter: interval}
 }
 
 // SetupWithManager sets up the controller with the Manager.
