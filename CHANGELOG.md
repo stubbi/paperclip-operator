@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.2](https://github.com/paperclipinc/paperclip-operator/compare/v0.5.1...v0.5.2) (2026-03-24)
+
+
+### Bug Fixes
+
+* add get verb to pods/exec RBAC for WebSocket exec ([#17](https://github.com/paperclipinc/paperclip-operator/issues/17)) ([ebb12cf](https://github.com/paperclipinc/paperclip-operator/commit/ebb12cfed78051e661511675c7a2103f2274b960))
+* add K8s API egress and sandbox scheduling env vars ([ebb12cf](https://github.com/paperclipinc/paperclip-operator/commit/ebb12cfed78051e661511675c7a2103f2274b960))
+* add K8s API egress and sandbox scheduling env vars ([edb5c33](https://github.com/paperclipinc/paperclip-operator/commit/edb5c33de19ff10e516d1cfe5913e50d36c2472b))
+* add K8s API egress to NetworkPolicy for cloud sandbox ([#15](https://github.com/paperclipinc/paperclip-operator/issues/15)) ([edb5c33](https://github.com/paperclipinc/paperclip-operator/commit/edb5c33de19ff10e516d1cfe5913e50d36c2472b))
+
 ## [0.5.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.5.0...v0.5.1) (2026-03-24)
 
 
