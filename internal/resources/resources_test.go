@@ -10,7 +10,6 @@ import (
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 )
 
-//nolint:unparam // test helper kept flexible for future test cases
 func newTestInstance(name string) *paperclipv1alpha1.Instance {
 	return &paperclipv1alpha1.Instance{
 		ObjectMeta: metav1.ObjectMeta{
@@ -274,6 +273,39 @@ func TestBuildNetworkPolicy(t *testing.T) {
 	// Should have egress rules for DNS, HTTPS, and database
 	if len(np.Spec.Egress) < 3 {
 		t.Errorf("expected at least 3 egress rules (DNS, HTTPS, database), got %d", len(np.Spec.Egress))
+	}
+}
+
+func TestBuildNetworkPolicyCloudSandboxK8sAPIEgress(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+	}
+	np := BuildNetworkPolicy(instance)
+
+	found := false
+	for _, rule := range np.Spec.Egress {
+		for _, port := range rule.Ports {
+			if port.Port != nil && port.Port.IntValue() == 6443 {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Error("expected egress rule for K8s API port 6443 when cloud sandbox enabled")
+	}
+}
+
+func TestBuildNetworkPolicyNoK8sAPIEgressWithoutSandbox(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	np := BuildNetworkPolicy(instance)
+
+	for _, rule := range np.Spec.Egress {
+		for _, port := range rule.Ports {
+			if port.Port != nil && port.Port.IntValue() == 6443 {
+				t.Error("should not have K8s API egress rule when cloud sandbox is not enabled")
+			}
+		}
 	}
 }
 
@@ -662,6 +694,68 @@ func TestBuildStatefulSetNoCloudSandbox(t *testing.T) {
 	for _, env := range container.Env {
 		if env.Name == "PAPERCLIP_CLOUD_SANDBOX_ENABLED" {
 			t.Error("unexpected cloud sandbox env var when not configured")
+		}
+	}
+}
+
+func TestBuildStatefulSetCloudSandboxSchedulingEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+	}
+	instance.Spec.Availability.NodeSelector = map[string]string{
+		"cloud.google.com/gke-nodepool": "sandbox",
+	}
+	instance.Spec.Availability.Tolerations = []corev1.Toleration{
+		{
+			Key:      "sandbox",
+			Operator: corev1.TolerationOpEqual,
+			Value:    "true",
+			Effect:   corev1.TaintEffectNoSchedule,
+		},
+	}
+
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	envMap := make(map[string]string)
+	for _, env := range container.Env {
+		if env.Value != "" {
+			envMap[env.Name] = env.Value
+		}
+	}
+
+	// Verify nodeSelector env var
+	nsVal, ok := envMap["PAPERCLIP_CLOUD_SANDBOX_NODE_SELECTOR"]
+	if !ok {
+		t.Fatal("expected PAPERCLIP_CLOUD_SANDBOX_NODE_SELECTOR to be set")
+	}
+	if nsVal != `{"cloud.google.com/gke-nodepool":"sandbox"}` {
+		t.Errorf("unexpected nodeSelector JSON: %s", nsVal)
+	}
+
+	// Verify tolerations env var
+	tolVal, ok := envMap["PAPERCLIP_CLOUD_SANDBOX_TOLERATIONS"]
+	if !ok {
+		t.Fatal("expected PAPERCLIP_CLOUD_SANDBOX_TOLERATIONS to be set")
+	}
+	if tolVal != `[{"key":"sandbox","operator":"Equal","value":"true","effect":"NoSchedule"}]` {
+		t.Errorf("unexpected tolerations JSON: %s", tolVal)
+	}
+
+	// Verify these are NOT set when availability scheduling is empty
+	instance2 := newTestInstance("my-paperclip-2")
+	instance2.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+	}
+	sts2 := BuildStatefulSet(instance2, nil)
+	container2 := sts2.Spec.Template.Spec.Containers[0]
+	for _, env := range container2.Env {
+		if env.Name == "PAPERCLIP_CLOUD_SANDBOX_NODE_SELECTOR" {
+			t.Error("unexpected PAPERCLIP_CLOUD_SANDBOX_NODE_SELECTOR when nodeSelector is empty")
+		}
+		if env.Name == "PAPERCLIP_CLOUD_SANDBOX_TOLERATIONS" {
+			t.Error("unexpected PAPERCLIP_CLOUD_SANDBOX_TOLERATIONS when tolerations is empty")
 		}
 	}
 }

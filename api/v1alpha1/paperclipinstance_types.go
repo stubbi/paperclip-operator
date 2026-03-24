@@ -357,12 +357,18 @@ type AdaptersSpec struct {
 	// +optional
 	CloudSandbox *CloudSandboxSpec `json:"cloudSandbox,omitempty"`
 
-	// ManagedInferenceSecretRef references a Secret containing the platform LLM API key.
-	// The Secret must contain a key "PAPERCLIP_MANAGED_INFERENCE_API_KEY".
+	// ManagedInferenceSecretRef references a Secret containing platform LLM API keys.
+	// The Secret should contain one or more of these keys:
+	//   PAPERCLIP_MANAGED_ANTHROPIC_API_KEY
+	//   PAPERCLIP_MANAGED_OPENAI_API_KEY
+	//   PAPERCLIP_MANAGED_GEMINI_API_KEY
+	//   PAPERCLIP_MANAGED_OPENROUTER_API_KEY
+	// For backward compatibility, PAPERCLIP_MANAGED_INFERENCE_API_KEY is also supported.
 	// +optional
 	ManagedInferenceSecretRef *corev1.LocalObjectReference `json:"managedInferenceSecretRef,omitempty"`
 
-	// ManagedInferenceProvider is the LLM provider for managed inference (e.g. "anthropic", "openrouter").
+	// ManagedInferenceProvider is the LLM provider for the legacy single-key mode.
+	// Ignored when per-provider keys are used.
 	// +kubebuilder:default="anthropic"
 	// +optional
 	ManagedInferenceProvider string `json:"managedInferenceProvider,omitempty"`

@@ -28,7 +28,7 @@ func sandboxBaseRules() []rbacv1.PolicyRule {
 		{
 			APIGroups: []string{""},
 			Resources: []string{"pods/exec"},
-			Verbs:     []string{"create"},
+			Verbs:     []string{"create", "get"},
 		},
 		{
 			APIGroups: []string{""},

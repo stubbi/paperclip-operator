@@ -27,7 +27,7 @@ rules:
     verbs: ["create", "delete", "get", "list", "patch", "watch"]
   - apiGroups: [""]
     resources: ["pods/exec"]
-    verbs: ["create"]
+    verbs: ["create", "get"]
   - apiGroups: [""]
     resources: ["pods/log"]
     verbs: ["get"]
