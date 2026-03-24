@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.4.0...v0.5.0) (2026-03-24)
+
+
+### Features
+
+* managed inference, persistence, multi-namespace CRD support ([#11](https://github.com/paperclipinc/paperclip-operator/issues/11)) ([f6b1f87](https://github.com/paperclipinc/paperclip-operator/commit/f6b1f87fbf51eab097e0d482c746748fab3d387d))
+
 ## [0.4.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.3.0...v0.4.0) (2026-03-23)
 
 
