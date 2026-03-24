@@ -90,10 +90,115 @@ spec:
                           pod can be idle before being reaped.
                         format: int32
                         type: integer
+                      inferenceProxy:
+                        description: InferenceProxy configures the transparent inference
+                          metering proxy.
+                        properties:
+                          enabled:
+                            description: Enabled enables the inference proxy sidecar
+                              for metered API access.
+                            type: boolean
+                          image:
+                            description: Image is the inference proxy container image.
+                            type: string
+                          port:
+                            default: 8090
+                            description: Port is the port the proxy listens on.
+                            format: int32
+                            type: integer
+                        type: object
+                      multiNamespace:
+                        description: |-
+                          MultiNamespace enables per-company namespace isolation for sandbox pods.
+                          When enabled, each company's sandbox pods run in a dedicated namespace.
+                        type: boolean
                       namespace:
                         description: Namespace is the namespace for sandbox pods.
                           Defaults to the instance namespace.
                         type: string
+                      persistence:
+                        description: Persistence configures PVC-backed persistent
+                          workspaces for sandbox pods.
+                        properties:
+                          enabled:
+                            description: Enabled enables PVC-backed workspaces instead
+                              of emptyDir.
+                            type: boolean
+                          size:
+                            default: 10Gi
+                            description: Size is the storage size for workspace PVCs
+                              (e.g. "10Gi").
+                            type: string
+                          storageClass:
+                            description: StorageClass is the storage class for workspace
+                              PVCs.
+                            type: string
+                        type: object
+                      resourceTiers:
+                        additionalProperties:
+                          description: ResourceRequirements describes the compute
+                            resource requirements.
+                          properties:
+                            claims:
+                              description: |-
+                                Claims lists the names of resources, defined in spec.resourceClaims,
+                                that are used by this container.
+
+                                This is an alpha field and requires enabling the
+                                DynamicResourceAllocation feature gate.
+
+                                This field is immutable. It can only be set for containers.
+                              items:
+                                description: ResourceClaim references one entry in
+                                  PodSpec.ResourceClaims.
+                                properties:
+                                  name:
+                                    description: |-
+                                      Name must match the name of one entry in pod.spec.resourceClaims of
+                                      the Pod where this field is used. It makes that resource available
+                                      inside a container.
+                                    type: string
+                                  request:
+                                    description: |-
+                                      Request is the name chosen for a request in the referenced claim.
+                                      If empty, everything from the claim is made available, otherwise
+                                      only the result of this request.
+                                    type: string
+                                required:
+                                - name
+                                type: object
+                              type: array
+                              x-kubernetes-list-map-keys:
+                              - name
+                              x-kubernetes-list-type: map
+                            limits:
+                              additionalProperties:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              description: |-
+                                Limits describes the maximum amount of compute resources allowed.
+                                More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                              type: object
+                            requests:
+                              additionalProperties:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
+                              description: |-
+                                Requests describes the minimum amount of compute resources required.
+                                If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                                otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                                More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                              type: object
+                          type: object
+                        description: ResourceTiers defines named resource presets
+                          for sandbox pods.
+                        type: object
                       resources:
                         description: Resources specifies default compute resources
                           for sandbox pods.
@@ -155,6 +260,32 @@ spec:
                             type: object
                         type: object
                     type: object
+                  managedInferenceModel:
+                    default: claude-sonnet-4-6
+                    description: ManagedInferenceModel is the default model for managed
+                      inference.
+                    type: string
+                  managedInferenceProvider:
+                    default: anthropic
+                    description: ManagedInferenceProvider is the LLM provider for
+                      managed inference (e.g. "anthropic", "openrouter").
+                    type: string
+                  managedInferenceSecretRef:
+                    description: |-
+                      ManagedInferenceSecretRef references a Secret containing the platform LLM API key.
+                      The Secret must contain a key "PAPERCLIP_MANAGED_INFERENCE_API_KEY".
+                    properties:
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
                 type: object
               auth:
                 description: Auth configures authentication settings.

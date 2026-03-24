@@ -319,24 +319,11 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		})
 	}
 
+	// Managed inference
+	vars = append(vars, buildManagedInferenceEnvVars(instance)...)
+
 	// Cloud sandbox
-	if cs := instance.Spec.Adapters.CloudSandbox; cs != nil && cs.Enabled {
-		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_ENABLED", Value: "true"})
-		ns := cs.Namespace
-		if ns == "" {
-			ns = instance.Namespace
-		}
-		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_NAMESPACE", Value: ns})
-		if cs.DefaultImage != "" {
-			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_DEFAULT_IMAGE", Value: cs.DefaultImage})
-		}
-		if cs.IdleTimeoutMin > 0 {
-			vars = append(vars, corev1.EnvVar{
-				Name:  "PAPERCLIP_CLOUD_SANDBOX_IDLE_TIMEOUT_MIN",
-				Value: fmt.Sprintf("%d", cs.IdleTimeoutMin),
-			})
-		}
-	}
+	vars = append(vars, buildCloudSandboxEnvVars(instance)...)
 
 	// OAuth connections
 	if instance.Spec.Connections != nil {
@@ -375,6 +362,90 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 
 	// User-supplied env vars (last, so they can override defaults)
 	vars = append(vars, instance.Spec.Env...)
+
+	return vars
+}
+
+func buildManagedInferenceEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
+	if instance.Spec.Adapters.ManagedInferenceSecretRef == nil {
+		return nil
+	}
+
+	vars := []corev1.EnvVar{
+		{
+			Name: "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: *instance.Spec.Adapters.ManagedInferenceSecretRef,
+					Key:                  "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+				},
+			},
+		},
+	}
+
+	if instance.Spec.Adapters.ManagedInferenceProvider != "" {
+		vars = append(vars, corev1.EnvVar{
+			Name:  "PAPERCLIP_MANAGED_INFERENCE_PROVIDER",
+			Value: instance.Spec.Adapters.ManagedInferenceProvider,
+		})
+	}
+	if instance.Spec.Adapters.ManagedInferenceModel != "" {
+		vars = append(vars, corev1.EnvVar{
+			Name:  "PAPERCLIP_MANAGED_INFERENCE_MODEL",
+			Value: instance.Spec.Adapters.ManagedInferenceModel,
+		})
+	}
+
+	return vars
+}
+
+func buildCloudSandboxEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
+	cs := instance.Spec.Adapters.CloudSandbox
+	if cs == nil || !cs.Enabled {
+		return nil
+	}
+
+	vars := []corev1.EnvVar{
+		{Name: "PAPERCLIP_CLOUD_SANDBOX_ENABLED", Value: "true"},
+	}
+
+	ns := cs.Namespace
+	if ns == "" {
+		ns = instance.Namespace
+	}
+	vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_NAMESPACE", Value: ns})
+
+	if cs.DefaultImage != "" {
+		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_DEFAULT_IMAGE", Value: cs.DefaultImage})
+	}
+	if cs.IdleTimeoutMin > 0 {
+		vars = append(vars, corev1.EnvVar{
+			Name:  "PAPERCLIP_CLOUD_SANDBOX_IDLE_TIMEOUT_MIN",
+			Value: fmt.Sprintf("%d", cs.IdleTimeoutMin),
+		})
+	}
+
+	// Phase 4: persistence
+	if cs.Persistence != nil && cs.Persistence.Enabled {
+		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_ENABLED", Value: "true"})
+		if cs.Persistence.StorageClass != "" {
+			vars = append(vars, corev1.EnvVar{
+				Name:  "PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_STORAGE_CLASS",
+				Value: cs.Persistence.StorageClass,
+			})
+		}
+		if cs.Persistence.Size != "" {
+			vars = append(vars, corev1.EnvVar{
+				Name:  "PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_SIZE",
+				Value: cs.Persistence.Size,
+			})
+		}
+	}
+
+	// Phase 4: multi-namespace isolation
+	if cs.MultiNamespace {
+		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_MULTI_NAMESPACE", Value: "true"})
+	}
 
 	return vars
 }

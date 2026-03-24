@@ -526,6 +526,134 @@ func TestBuildStatefulSetCloudSandboxEnvVars(t *testing.T) {
 	}
 }
 
+func TestBuildStatefulSetManagedInferenceEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.ManagedInferenceSecretRef = &corev1.LocalObjectReference{Name: "inference-secret"}
+	instance.Spec.Adapters.ManagedInferenceProvider = "anthropic"
+	instance.Spec.Adapters.ManagedInferenceModel = "claude-sonnet-4-6"
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	// Check API key from secret
+	var foundKey bool
+	for _, env := range container.Env {
+		if env.Name == "PAPERCLIP_MANAGED_INFERENCE_API_KEY" {
+			foundKey = true
+			if env.ValueFrom == nil || env.ValueFrom.SecretKeyRef == nil {
+				t.Fatal("expected SecretKeyRef for PAPERCLIP_MANAGED_INFERENCE_API_KEY")
+			}
+			if env.ValueFrom.SecretKeyRef.Name != "inference-secret" {
+				t.Errorf("expected secret name 'inference-secret', got %q", env.ValueFrom.SecretKeyRef.Name)
+			}
+			if env.ValueFrom.SecretKeyRef.Key != "PAPERCLIP_MANAGED_INFERENCE_API_KEY" {
+				t.Errorf("expected key 'PAPERCLIP_MANAGED_INFERENCE_API_KEY', got %q", env.ValueFrom.SecretKeyRef.Key)
+			}
+		}
+	}
+	if !foundKey {
+		t.Error("expected PAPERCLIP_MANAGED_INFERENCE_API_KEY env var")
+	}
+
+	// Check plain env vars
+	envMap := make(map[string]string)
+	for _, env := range container.Env {
+		if env.Value != "" {
+			envMap[env.Name] = env.Value
+		}
+	}
+	if envMap["PAPERCLIP_MANAGED_INFERENCE_PROVIDER"] != "anthropic" {
+		t.Errorf("expected provider 'anthropic', got %q", envMap["PAPERCLIP_MANAGED_INFERENCE_PROVIDER"])
+	}
+	if envMap["PAPERCLIP_MANAGED_INFERENCE_MODEL"] != "claude-sonnet-4-6" {
+		t.Errorf("expected model 'claude-sonnet-4-6', got %q", envMap["PAPERCLIP_MANAGED_INFERENCE_MODEL"])
+	}
+}
+
+func TestBuildStatefulSetManagedInferenceNoSecretRef(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	// ManagedInferenceSecretRef is nil by default
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	for _, env := range container.Env {
+		if env.Name == "PAPERCLIP_MANAGED_INFERENCE_API_KEY" ||
+			env.Name == "PAPERCLIP_MANAGED_INFERENCE_PROVIDER" ||
+			env.Name == "PAPERCLIP_MANAGED_INFERENCE_MODEL" {
+			t.Errorf("unexpected managed inference env var %q when secret ref is nil", env.Name)
+		}
+	}
+}
+
+func TestBuildStatefulSetCloudSandboxPersistenceEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+		Persistence: &paperclipv1alpha1.CloudSandboxPersistenceSpec{
+			Enabled:      true,
+			StorageClass: "fast-ssd",
+			Size:         "20Gi",
+		},
+	}
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	envMap := make(map[string]string)
+	for _, env := range container.Env {
+		if env.Value != "" {
+			envMap[env.Name] = env.Value
+		}
+	}
+
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_ENABLED"] != "true" {
+		t.Error("expected PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_ENABLED=true")
+	}
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_STORAGE_CLASS"] != "fast-ssd" {
+		t.Errorf("expected storage class 'fast-ssd', got %q", envMap["PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_STORAGE_CLASS"])
+	}
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_SIZE"] != "20Gi" {
+		t.Errorf("expected size '20Gi', got %q", envMap["PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_SIZE"])
+	}
+}
+
+func TestBuildStatefulSetCloudSandboxMultiNamespaceEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled:        true,
+		MultiNamespace: true,
+	}
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	envMap := make(map[string]string)
+	for _, env := range container.Env {
+		if env.Value != "" {
+			envMap[env.Name] = env.Value
+		}
+	}
+
+	if envMap["PAPERCLIP_CLOUD_SANDBOX_MULTI_NAMESPACE"] != "true" {
+		t.Error("expected PAPERCLIP_CLOUD_SANDBOX_MULTI_NAMESPACE=true")
+	}
+}
+
+func TestBuildStatefulSetCloudSandboxNoPersistenceEnvVars(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+	}
+	sts := BuildStatefulSet(instance, nil)
+	container := sts.Spec.Template.Spec.Containers[0]
+
+	for _, env := range container.Env {
+		if env.Name == "PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_ENABLED" ||
+			env.Name == "PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_STORAGE_CLASS" ||
+			env.Name == "PAPERCLIP_CLOUD_SANDBOX_PERSISTENCE_SIZE" ||
+			env.Name == "PAPERCLIP_CLOUD_SANDBOX_MULTI_NAMESPACE" {
+			t.Errorf("unexpected env var %q when persistence/multi-namespace not configured", env.Name)
+		}
+	}
+}
+
 func TestBuildStatefulSetNoCloudSandbox(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	sts := BuildStatefulSet(instance, nil)
@@ -556,6 +684,123 @@ func TestBuildSandboxRole(t *testing.T) {
 	expectedVerbs := []string{"create", "get", "list", "watch", "delete", "patch"}
 	if len(podsRule.Verbs) != len(expectedVerbs) {
 		t.Errorf("expected %d verbs for pods, got %d", len(expectedVerbs), len(podsRule.Verbs))
+	}
+}
+
+func TestBuildSandboxRolePersistencePVC(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+		Persistence: &paperclipv1alpha1.CloudSandboxPersistenceSpec{
+			Enabled:      true,
+			StorageClass: "fast-ssd",
+			Size:         "20Gi",
+		},
+	}
+	role := BuildSandboxRole(instance, "test-ns")
+
+	if len(role.Rules) != 5 {
+		t.Errorf("expected 5 rules (pods, pods/exec, pods/log, networkpolicies, pvcs), got %d", len(role.Rules))
+	}
+	// The PVC rule should be the last one
+	pvcRule := role.Rules[4]
+	if len(pvcRule.Resources) != 1 || pvcRule.Resources[0] != "persistentvolumeclaims" {
+		t.Errorf("expected PVC resource, got %v", pvcRule.Resources)
+	}
+	expectedVerbs := []string{"create", "get", "list", "delete"}
+	if len(pvcRule.Verbs) != len(expectedVerbs) {
+		t.Errorf("expected %d verbs for PVCs, got %d", len(expectedVerbs), len(pvcRule.Verbs))
+	}
+}
+
+func TestBuildSandboxRoleNoPersistence(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled: true,
+	}
+	role := BuildSandboxRole(instance, "test-ns")
+
+	// Should have only the base 4 rules without PVC
+	if len(role.Rules) != 4 {
+		t.Errorf("expected 4 rules without persistence, got %d", len(role.Rules))
+	}
+	for _, rule := range role.Rules {
+		for _, res := range rule.Resources {
+			if res == "persistentvolumeclaims" {
+				t.Error("unexpected PVC rule when persistence is not enabled")
+			}
+		}
+	}
+}
+
+func TestBuildSandboxClusterRole(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled:        true,
+		MultiNamespace: true,
+	}
+	cr := BuildSandboxClusterRole(instance)
+
+	if cr.Name != "test-ns-my-paperclip-sandbox" {
+		t.Errorf("expected name test-ns-my-paperclip-sandbox, got %q", cr.Name)
+	}
+	// Should have base 4 rules + namespace rule = 5
+	if len(cr.Rules) != 5 {
+		t.Errorf("expected 5 rules (pods, pods/exec, pods/log, networkpolicies, namespaces), got %d", len(cr.Rules))
+	}
+	// Namespace rule should be the last one
+	nsRule := cr.Rules[4]
+	if len(nsRule.Resources) != 1 || nsRule.Resources[0] != "namespaces" {
+		t.Errorf("expected namespaces resource, got %v", nsRule.Resources)
+	}
+	expectedVerbs := []string{"create", "get", "list"}
+	if len(nsRule.Verbs) != len(expectedVerbs) {
+		t.Errorf("expected %d verbs for namespaces, got %d", len(expectedVerbs), len(nsRule.Verbs))
+	}
+}
+
+func TestBuildSandboxClusterRoleWithPersistence(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled:        true,
+		MultiNamespace: true,
+		Persistence: &paperclipv1alpha1.CloudSandboxPersistenceSpec{
+			Enabled: true,
+		},
+	}
+	cr := BuildSandboxClusterRole(instance)
+
+	// Should have base 4 rules + PVC rule + namespace rule = 6
+	if len(cr.Rules) != 6 {
+		t.Errorf("expected 6 rules, got %d", len(cr.Rules))
+	}
+}
+
+func TestBuildSandboxClusterRoleBinding(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Adapters.CloudSandbox = &paperclipv1alpha1.CloudSandboxSpec{
+		Enabled:        true,
+		MultiNamespace: true,
+	}
+	binding := BuildSandboxClusterRoleBinding(instance)
+
+	if binding.Name != "test-ns-my-paperclip-sandbox" {
+		t.Errorf("expected name test-ns-my-paperclip-sandbox, got %q", binding.Name)
+	}
+	if binding.RoleRef.Kind != "ClusterRole" {
+		t.Errorf("expected ClusterRole kind, got %q", binding.RoleRef.Kind)
+	}
+	if binding.RoleRef.Name != "test-ns-my-paperclip-sandbox" {
+		t.Error("expected role ref to match sandbox cluster role name")
+	}
+	if len(binding.Subjects) != 1 {
+		t.Fatalf("expected 1 subject, got %d", len(binding.Subjects))
+	}
+	if binding.Subjects[0].Name != "my-paperclip" {
+		t.Error("expected subject to be instance service account")
+	}
+	if binding.Subjects[0].Namespace != "test-ns" {
+		t.Errorf("expected subject namespace test-ns, got %q", binding.Subjects[0].Namespace)
 	}
 }
 
