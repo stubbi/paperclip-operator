@@ -273,13 +273,19 @@ spec:
                     type: string
                   managedInferenceProvider:
                     default: anthropic
-                    description: ManagedInferenceProvider is the LLM provider for
-                      managed inference (e.g. "anthropic", "openrouter").
+                    description: |-
+                      ManagedInferenceProvider is the LLM provider for the legacy single-key mode.
+                      Ignored when per-provider keys are used.
                     type: string
                   managedInferenceSecretRef:
                     description: |-
-                      ManagedInferenceSecretRef references a Secret containing the platform LLM API key.
-                      The Secret must contain a key "PAPERCLIP_MANAGED_INFERENCE_API_KEY".
+                      ManagedInferenceSecretRef references a Secret containing platform LLM API keys.
+                      The Secret should contain one or more of these keys:
+                        PAPERCLIP_MANAGED_ANTHROPIC_API_KEY
+                        PAPERCLIP_MANAGED_OPENAI_API_KEY
+                        PAPERCLIP_MANAGED_GEMINI_API_KEY
+                        PAPERCLIP_MANAGED_OPENROUTER_API_KEY
+                      For backward compatibility, PAPERCLIP_MANAGED_INFERENCE_API_KEY is also supported.
                     properties:
                       name:
                         default: ""

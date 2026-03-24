@@ -372,17 +372,41 @@ func buildManagedInferenceEnvVars(instance *paperclipv1alpha1.Instance) []corev1
 		return nil
 	}
 
-	vars := []corev1.EnvVar{
-		{
-			Name: "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+	secretRef := *instance.Spec.Adapters.ManagedInferenceSecretRef
+
+	// Per-provider keys - each is optional in the Secret
+	providerKeys := []string{
+		"PAPERCLIP_MANAGED_ANTHROPIC_API_KEY",
+		"PAPERCLIP_MANAGED_OPENAI_API_KEY",
+		"PAPERCLIP_MANAGED_GEMINI_API_KEY",
+		"PAPERCLIP_MANAGED_OPENROUTER_API_KEY",
+	}
+
+	vars := make([]corev1.EnvVar, 0, len(providerKeys)+3)
+	for _, key := range providerKeys {
+		vars = append(vars, corev1.EnvVar{
+			Name: key,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: *instance.Spec.Adapters.ManagedInferenceSecretRef,
-					Key:                  "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+					LocalObjectReference: secretRef,
+					Key:                  key,
+					Optional:             Ptr(true),
 				},
 			},
-		},
+		})
 	}
+
+	// Legacy single-key for backward compatibility
+	vars = append(vars, corev1.EnvVar{
+		Name: "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: secretRef,
+				Key:                  "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+				Optional:             Ptr(true),
+			},
+		},
+	})
 
 	if instance.Spec.Adapters.ManagedInferenceProvider != "" {
 		vars = append(vars, corev1.EnvVar{
