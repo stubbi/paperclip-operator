@@ -61,6 +61,21 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 		},
 	}
 
+	// Allow egress to K8s API server when cloud sandbox is enabled.
+	// The server needs to create/manage sandbox pods via the K8s API.
+	// An explicit rule is needed because some CNIs (k3s Flannel, Calico)
+	// do not match host-network destinations with portOnly egress rules.
+	if instance.Spec.Adapters.CloudSandbox != nil && instance.Spec.Adapters.CloudSandbox.Enabled {
+		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
+			Ports: []networkingv1.NetworkPolicyPort{
+				{
+					Port:     Ptr(intstr.FromInt32(6443)),
+					Protocol: Ptr(corev1.ProtocolTCP),
+				},
+			},
+		})
+	}
+
 	// Allow egress to managed database if applicable
 	if instance.Spec.Database.Mode == "managed" || instance.Spec.Database.Mode == "" {
 		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{

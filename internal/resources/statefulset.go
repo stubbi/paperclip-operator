@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -445,6 +446,25 @@ func buildCloudSandboxEnvVars(instance *paperclipv1alpha1.Instance) []corev1.Env
 	// Phase 4: multi-namespace isolation
 	if cs.MultiNamespace {
 		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_MULTI_NAMESPACE", Value: "true"})
+	}
+
+	// Node scheduling: pass the instance's scheduling constraints so the
+	// Paperclip server can apply them to sandbox pods it creates.
+	if len(instance.Spec.Availability.NodeSelector) > 0 {
+		if b, err := json.Marshal(instance.Spec.Availability.NodeSelector); err == nil {
+			vars = append(vars, corev1.EnvVar{
+				Name:  "PAPERCLIP_CLOUD_SANDBOX_NODE_SELECTOR",
+				Value: string(b),
+			})
+		}
+	}
+	if len(instance.Spec.Availability.Tolerations) > 0 {
+		if b, err := json.Marshal(instance.Spec.Availability.Tolerations); err == nil {
+			vars = append(vars, corev1.EnvVar{
+				Name:  "PAPERCLIP_CLOUD_SANDBOX_TOLERATIONS",
+				Value: string(b),
+			})
+		}
 	}
 
 	return vars
