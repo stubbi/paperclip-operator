@@ -181,6 +181,13 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 	}
 
+	// 2.5. Redis (if managed)
+	if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == "managed" || instance.Spec.Redis.Mode == "") {
+		if err := r.reconcileManagedRedis(ctx, instance); err != nil {
+			return r.handleError(ctx, instance, "Redis", err)
+		}
+	}
+
 	// 3. PVC (if persistence enabled)
 	if instance.Spec.Storage.Persistence.Enabled {
 		if err := r.reconcilePVC(ctx, instance); err != nil {
@@ -401,6 +408,66 @@ func (r *InstanceReconciler) reconcileManagedDatabase(ctx context.Context, insta
 		Message:            "Managed PostgreSQL database is provisioned",
 		ObservedGeneration: instance.Generation,
 	})
+
+	return nil
+}
+
+func (r *InstanceReconciler) reconcileManagedRedis(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	// Redis PVC
+	pvc := &corev1.PersistentVolumeClaim{}
+	pvcName := resources.RedisPVCName(instance)
+	err := r.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
+	if apierrors.IsNotFound(err) {
+		desired := resources.BuildRedisPVC(instance)
+		if setErr := controllerutil.SetControllerReference(instance, desired, r.Scheme); setErr != nil {
+			return fmt.Errorf("setting owner reference on Redis PVC: %w", setErr)
+		}
+		if createErr := r.Create(ctx, desired); createErr != nil {
+			return fmt.Errorf("creating Redis PVC: %w", createErr)
+		}
+		instance.Status.ManagedResources.RedisPVC = pvcName
+	} else if err != nil {
+		return fmt.Errorf("getting Redis PVC: %w", err)
+	}
+
+	// Redis Service
+	desiredSvc := resources.BuildRedisService(instance)
+	svcObj := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desiredSvc.Name,
+			Namespace: desiredSvc.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, svcObj, func() error {
+		svcObj.Labels = desiredSvc.Labels
+		svcObj.Spec.Selector = desiredSvc.Spec.Selector
+		svcObj.Spec.Ports = desiredSvc.Spec.Ports
+		svcObj.Spec.Type = desiredSvc.Spec.Type
+		svcObj.Spec.SessionAffinity = desiredSvc.Spec.SessionAffinity
+		return controllerutil.SetControllerReference(instance, svcObj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling Redis Service: %w", err)
+	}
+	instance.Status.ManagedResources.RedisService = svcObj.Name
+
+	// Redis StatefulSet
+	desiredSts := resources.BuildRedisStatefulSet(instance)
+	stsObj := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desiredSts.Name,
+			Namespace: desiredSts.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, stsObj, func() error {
+		stsObj.Labels = desiredSts.Labels
+		stsObj.Spec = desiredSts.Spec
+		return controllerutil.SetControllerReference(instance, stsObj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling Redis StatefulSet: %w", err)
+	}
+	instance.Status.ManagedResources.RedisStatefulSet = stsObj.Name
 
 	return nil
 }

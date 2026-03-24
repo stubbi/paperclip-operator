@@ -52,6 +52,10 @@ type InstanceSpec struct {
 	// +optional
 	ObjectStorage *ObjectStorageSpec `json:"objectStorage,omitempty"`
 
+	// Redis configures Redis for rate limiting and caching in multi-replica deployments.
+	// +optional
+	Redis *RedisSpec `json:"redis,omitempty"`
+
 	// Heartbeat configures the agent heartbeat scheduler.
 	// +optional
 	Heartbeat HeartbeatSpec `json:"heartbeat,omitempty"`
@@ -331,6 +335,48 @@ type ObjectStorageSpec struct {
 	// CredentialsSecretRef references a Secret containing AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
 	// +optional
 	CredentialsSecretRef *corev1.LocalObjectReference `json:"credentialsSecretRef,omitempty"`
+}
+
+// RedisSpec configures Redis for rate limiting and caching.
+type RedisSpec struct {
+	// Mode selects the Redis mode: "managed" (operator-provisioned) or "external" (user-provided URL).
+	// +kubebuilder:default="managed"
+	// +kubebuilder:validation:Enum=managed;external
+	// +optional
+	Mode string `json:"mode,omitempty"`
+
+	// ExternalURL is the Redis connection string for external mode (e.g. "redis://host:6379").
+	// +optional
+	ExternalURL string `json:"externalURL,omitempty"`
+
+	// ExternalURLSecretRef references a Secret key containing the Redis URL.
+	// +optional
+	ExternalURLSecretRef *corev1.SecretKeySelector `json:"externalURLSecretRef,omitempty"`
+
+	// Managed configures the operator-managed Redis instance.
+	// +optional
+	Managed ManagedRedisSpec `json:"managed,omitempty"`
+}
+
+// ManagedRedisSpec configures the operator-managed Redis instance.
+type ManagedRedisSpec struct {
+	// Image is the Redis container image.
+	// +kubebuilder:default="redis:7-alpine"
+	// +optional
+	Image string `json:"image,omitempty"`
+
+	// StorageSize is the PVC size for Redis data. Defaults to 1Gi.
+	// +kubebuilder:default="1Gi"
+	// +optional
+	StorageSize resource.Quantity `json:"storageSize,omitempty"`
+
+	// StorageClass is the storage class for the Redis PVC.
+	// +optional
+	StorageClass *string `json:"storageClass,omitempty"`
+
+	// Resources specifies compute resources for the Redis container.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // HeartbeatSpec configures the agent heartbeat scheduler.
@@ -867,6 +913,12 @@ type ManagedResources struct {
 	DatabaseService string `json:"databaseService,omitempty"`
 	// +optional
 	DatabasePVC string `json:"databasePVC,omitempty"`
+	// +optional
+	RedisStatefulSet string `json:"redisStatefulSet,omitempty"`
+	// +optional
+	RedisService string `json:"redisService,omitempty"`
+	// +optional
+	RedisPVC string `json:"redisPVC,omitempty"`
 }
 
 // BackupStatus tracks the state of a backup operation.

@@ -45,6 +45,12 @@ spec:
     credentialsSecretRef:
       name: paperclip-s3
 
+  redis:
+    mode: managed
+    managed:
+      image: redis:7-alpine
+      storageSize: 1Gi
+
   heartbeat:
     enabled: true
     intervalMS: 30000
