@@ -397,6 +397,49 @@ type CloudSandboxSpec struct {
 	// Resources specifies default compute resources for sandbox pods.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Persistence configures PVC-backed persistent workspaces for sandbox pods.
+	// +optional
+	Persistence *CloudSandboxPersistenceSpec `json:"persistence,omitempty"`
+
+	// MultiNamespace enables per-company namespace isolation for sandbox pods.
+	// When enabled, each company's sandbox pods run in a dedicated namespace.
+	// +optional
+	MultiNamespace bool `json:"multiNamespace,omitempty"`
+
+	// InferenceProxy configures the transparent inference metering proxy.
+	// +optional
+	InferenceProxy *InferenceProxySpec `json:"inferenceProxy,omitempty"`
+
+	// ResourceTiers defines named resource presets for sandbox pods.
+	// +optional
+	ResourceTiers map[string]corev1.ResourceRequirements `json:"resourceTiers,omitempty"`
+}
+
+// CloudSandboxPersistenceSpec configures PVC-backed persistent workspaces.
+type CloudSandboxPersistenceSpec struct {
+	// Enabled enables PVC-backed workspaces instead of emptyDir.
+	Enabled bool `json:"enabled,omitempty"`
+	// StorageClass is the storage class for workspace PVCs.
+	// +optional
+	StorageClass string `json:"storageClass,omitempty"`
+	// Size is the storage size for workspace PVCs (e.g. "10Gi").
+	// +kubebuilder:default="10Gi"
+	// +optional
+	Size string `json:"size,omitempty"`
+}
+
+// InferenceProxySpec configures the transparent inference metering proxy.
+type InferenceProxySpec struct {
+	// Enabled enables the inference proxy sidecar for metered API access.
+	Enabled bool `json:"enabled,omitempty"`
+	// Image is the inference proxy container image.
+	// +optional
+	Image string `json:"image,omitempty"`
+	// Port is the port the proxy listens on.
+	// +kubebuilder:default=8090
+	// +optional
+	Port int32 `json:"port,omitempty"`
 }
 
 // ConnectionsSpec configures third-party OAuth provider credentials.
