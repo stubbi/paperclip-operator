@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.5.0...v0.5.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* add pods/exec and pods/log to operator ClusterRole ([#13](https://github.com/paperclipinc/paperclip-operator/issues/13)) ([97b948e](https://github.com/paperclipinc/paperclip-operator/commit/97b948e346464e6da72dfadfe24727154cdaea1b))
+
 ## [0.5.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.4.0...v0.5.0) (2026-03-24)
 
 
