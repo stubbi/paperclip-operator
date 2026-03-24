@@ -319,6 +319,9 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		})
 	}
 
+	// Managed inference
+	vars = append(vars, buildManagedInferenceEnvVars(instance)...)
+
 	// Cloud sandbox
 	if cs := instance.Spec.Adapters.CloudSandbox; cs != nil && cs.Enabled {
 		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_CLOUD_SANDBOX_ENABLED", Value: "true"})
@@ -375,6 +378,39 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 
 	// User-supplied env vars (last, so they can override defaults)
 	vars = append(vars, instance.Spec.Env...)
+
+	return vars
+}
+
+func buildManagedInferenceEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
+	if instance.Spec.Adapters.ManagedInferenceSecretRef == nil {
+		return nil
+	}
+
+	vars := []corev1.EnvVar{
+		{
+			Name: "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: *instance.Spec.Adapters.ManagedInferenceSecretRef,
+					Key:                  "PAPERCLIP_MANAGED_INFERENCE_API_KEY",
+				},
+			},
+		},
+	}
+
+	if instance.Spec.Adapters.ManagedInferenceProvider != "" {
+		vars = append(vars, corev1.EnvVar{
+			Name:  "PAPERCLIP_MANAGED_INFERENCE_PROVIDER",
+			Value: instance.Spec.Adapters.ManagedInferenceProvider,
+		})
+	}
+	if instance.Spec.Adapters.ManagedInferenceModel != "" {
+		vars = append(vars, corev1.EnvVar{
+			Name:  "PAPERCLIP_MANAGED_INFERENCE_MODEL",
+			Value: instance.Spec.Adapters.ManagedInferenceModel,
+		})
+	}
 
 	return vars
 }

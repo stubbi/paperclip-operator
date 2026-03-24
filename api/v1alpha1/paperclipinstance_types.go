@@ -356,6 +356,21 @@ type AdaptersSpec struct {
 	// CloudSandbox configures cloud-based agent execution in isolated Kubernetes pods.
 	// +optional
 	CloudSandbox *CloudSandboxSpec `json:"cloudSandbox,omitempty"`
+
+	// ManagedInferenceSecretRef references a Secret containing the platform LLM API key.
+	// The Secret must contain a key "PAPERCLIP_MANAGED_INFERENCE_API_KEY".
+	// +optional
+	ManagedInferenceSecretRef *corev1.LocalObjectReference `json:"managedInferenceSecretRef,omitempty"`
+
+	// ManagedInferenceProvider is the LLM provider for managed inference (e.g. "anthropic", "openrouter").
+	// +kubebuilder:default="anthropic"
+	// +optional
+	ManagedInferenceProvider string `json:"managedInferenceProvider,omitempty"`
+
+	// ManagedInferenceModel is the default model for managed inference.
+	// +kubebuilder:default="claude-sonnet-4-6"
+	// +optional
+	ManagedInferenceModel string `json:"managedInferenceModel,omitempty"`
 }
 
 // CloudSandboxSpec configures cloud sandbox execution for agent runtimes.
