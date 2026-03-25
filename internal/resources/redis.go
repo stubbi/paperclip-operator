@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"fmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -60,10 +62,12 @@ func BuildRedisStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Statefu
 		storageSize = resource.MustParse("1Gi")
 	}
 
+	maxMemory := redisMaxMemory(instance)
+
 	container := corev1.Container{
-		Name:  RedisContainerName,
-		Image: image,
-		Command: []string{"redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"},
+		Name:    RedisContainerName,
+		Image:   image,
+		Command: []string{"redis-server", "--appendonly", "yes", "--maxmemory", maxMemory, "--maxmemory-policy", "allkeys-lru"},
 		Ports: []corev1.ContainerPort{
 			{
 				Name:          "redis",
@@ -71,7 +75,7 @@ func BuildRedisStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Statefu
 				Protocol:      corev1.ProtocolTCP,
 			},
 		},
-		Resources: redisResources(instance),
+		Resources:                redisResources(instance),
 		ImagePullPolicy:          corev1.PullIfNotPresent,
 		TerminationMessagePath:   "/dev/termination-log",
 		TerminationMessagePolicy: corev1.TerminationMessageReadFile,
@@ -110,6 +114,12 @@ func BuildRedisStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Statefu
 			RunAsNonRoot:             Ptr(true),
 			RunAsUser:                Ptr(int64(999)), // redis user
 			RunAsGroup:               Ptr(int64(999)),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
 		},
 	}
 
@@ -186,6 +196,21 @@ func defaultRedisResources() corev1.ResourceRequirements {
 			corev1.ResourceMemory: resource.MustParse("512Mi"),
 		},
 	}
+}
+
+// redisMaxMemory returns the Redis maxmemory value derived from the container memory limit.
+// Uses 75% of the memory limit to leave headroom for Redis overhead (connections, buffers).
+func redisMaxMemory(instance *paperclipv1alpha1.Instance) string {
+	res := redisResources(instance)
+	if memLimit, ok := res.Limits[corev1.ResourceMemory]; ok {
+		bytes := memLimit.Value()
+		mb := (bytes * 3 / 4) / (1024 * 1024)
+		if mb < 1 {
+			mb = 1
+		}
+		return fmt.Sprintf("%dmb", mb)
+	}
+	return "256mb"
 }
 
 // RedisURL returns the Redis connection URL for the managed instance.

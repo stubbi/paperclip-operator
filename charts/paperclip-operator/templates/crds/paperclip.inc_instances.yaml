@@ -5626,8 +5626,10 @@ spec:
                   in multi-replica deployments.
                 properties:
                   externalURL:
-                    description: ExternalURL is the Redis connection string for external
-                      mode (e.g. "redis://host:6379").
+                    description: |-
+                      ExternalURL is the Redis connection string for external mode (e.g. "redis://host:6379").
+                      WARNING: This value is stored in plaintext in the CRD spec (etcd). If the URL contains
+                      credentials, use ExternalURLSecretRef instead to reference a Secret.
                     type: string
                   externalURLSecretRef:
                     description: ExternalURLSecretRef references a Secret key containing

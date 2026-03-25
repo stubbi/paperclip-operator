@@ -56,6 +56,8 @@ const (
 	ConditionStatefulSetReady = "StatefulSetReady"
 	// ConditionServiceReady indicates the Service is ready.
 	ConditionServiceReady = "ServiceReady"
+	// ConditionRedisReady indicates the managed Redis is ready.
+	ConditionRedisReady = "RedisReady"
 
 	// AnnotationResolvedDigest is the pod template annotation that records the current resolved digest.
 	// Changing this annotation triggers a rolling restart.
@@ -468,6 +470,15 @@ func (r *InstanceReconciler) reconcileManagedRedis(ctx context.Context, instance
 		return fmt.Errorf("reconciling Redis StatefulSet: %w", err)
 	}
 	instance.Status.ManagedResources.RedisStatefulSet = stsObj.Name
+
+	// Set Redis condition
+	meta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{
+		Type:               ConditionRedisReady,
+		Status:             metav1.ConditionTrue,
+		Reason:             "RedisProvisioned",
+		Message:            "Managed Redis is provisioned",
+		ObservedGeneration: instance.Generation,
+	})
 
 	return nil
 }

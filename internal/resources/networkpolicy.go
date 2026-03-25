@@ -95,6 +95,25 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 		})
 	}
 
+	// Allow egress to managed Redis if applicable
+	if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == "managed" || instance.Spec.Redis.Mode == "") {
+		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
+			To: []networkingv1.NetworkPolicyPeer{
+				{
+					PodSelector: &metav1.LabelSelector{
+						MatchLabels: RedisSelectorLabels(instance),
+					},
+				},
+			},
+			Ports: []networkingv1.NetworkPolicyPort{
+				{
+					Port:     Ptr(intstr.FromInt32(RedisPort)),
+					Protocol: Ptr(corev1.ProtocolTCP),
+				},
+			},
+		})
+	}
+
 	// Custom ingress CIDRs
 	for _, cidr := range instance.Spec.Security.NetworkPolicy.AllowIngressCIDRs {
 		np.Spec.Ingress = append(np.Spec.Ingress, networkingv1.NetworkPolicyIngressRule{

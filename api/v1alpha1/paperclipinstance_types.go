@@ -346,6 +346,8 @@ type RedisSpec struct {
 	Mode string `json:"mode,omitempty"`
 
 	// ExternalURL is the Redis connection string for external mode (e.g. "redis://host:6379").
+	// WARNING: This value is stored in plaintext in the CRD spec (etcd). If the URL contains
+	// credentials, use ExternalURLSecretRef instead to reference a Secret.
 	// +optional
 	ExternalURL string `json:"externalURL,omitempty"`
 
