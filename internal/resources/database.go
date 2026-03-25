@@ -97,6 +97,12 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 			RunAsNonRoot:             Ptr(true),
 			RunAsUser:                Ptr(int64(70)), // postgres user
 			RunAsGroup:               Ptr(int64(70)),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
 		},
 	}
 
@@ -117,6 +123,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 				},
 				Spec: corev1.PodSpec{
 					Containers:                    []corev1.Container{container},
+					AutomountServiceAccountToken:  Ptr(false),
 					RestartPolicy:                 corev1.RestartPolicyAlways,
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					SchedulerName:                 "default-scheduler",

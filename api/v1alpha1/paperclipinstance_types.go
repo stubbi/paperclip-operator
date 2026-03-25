@@ -215,6 +215,8 @@ type DatabaseSpec struct {
 	Mode string `json:"mode,omitempty"`
 
 	// ExternalURL is the PostgreSQL connection string for external mode.
+	// WARNING: This value is stored in plaintext in the CRD spec (etcd). If the URL contains
+	// credentials, use ExternalURLSecretRef instead to reference a Secret.
 	// +optional
 	ExternalURL string `json:"externalURL,omitempty"`
 
@@ -558,10 +560,14 @@ type NetworkPolicySpec struct {
 
 	// AllowIngressCIDRs specifies additional CIDR blocks allowed to reach the Paperclip service.
 	// +optional
+	// +listType=set
+	// +kubebuilder:validation:items:Pattern=`^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$`
 	AllowIngressCIDRs []string `json:"allowIngressCIDRs,omitempty"`
 
 	// AllowEgressCIDRs specifies additional CIDR blocks the pod can reach.
 	// +optional
+	// +listType=set
+	// +kubebuilder:validation:items:Pattern=`^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$`
 	AllowEgressCIDRs []string `json:"allowEgressCIDRs,omitempty"`
 }
 

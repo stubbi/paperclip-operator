@@ -148,3 +148,75 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 
 	return np
 }
+
+// BuildDatabaseNetworkPolicy constructs a NetworkPolicy restricting ingress to the managed database.
+// Only allows traffic from Paperclip server pods on the PostgreSQL port.
+func BuildDatabaseNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.NetworkPolicy {
+	return &networkingv1.NetworkPolicy{
+		ObjectMeta: ObjectMeta(instance, instance.Name+"-db"),
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: DatabaseSelectorLabels(instance),
+			},
+			PolicyTypes: []networkingv1.PolicyType{
+				networkingv1.PolicyTypeIngress,
+				networkingv1.PolicyTypeEgress,
+			},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{
+				{
+					From: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: SelectorLabels(instance),
+							},
+						},
+					},
+					Ports: []networkingv1.NetworkPolicyPort{
+						{
+							Port:     Ptr(intstr.FromInt32(PostgreSQLPort)),
+							Protocol: Ptr(corev1.ProtocolTCP),
+						},
+					},
+				},
+			},
+			// Deny all egress - database does not need outbound access
+			Egress: []networkingv1.NetworkPolicyEgressRule{},
+		},
+	}
+}
+
+// BuildRedisNetworkPolicy constructs a NetworkPolicy restricting ingress to the managed Redis.
+// Only allows traffic from Paperclip server pods on the Redis port.
+func BuildRedisNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.NetworkPolicy {
+	return &networkingv1.NetworkPolicy{
+		ObjectMeta: ObjectMeta(instance, instance.Name+"-redis"),
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: RedisSelectorLabels(instance),
+			},
+			PolicyTypes: []networkingv1.PolicyType{
+				networkingv1.PolicyTypeIngress,
+				networkingv1.PolicyTypeEgress,
+			},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{
+				{
+					From: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: SelectorLabels(instance),
+							},
+						},
+					},
+					Ports: []networkingv1.NetworkPolicyPort{
+						{
+							Port:     Ptr(intstr.FromInt32(RedisPort)),
+							Protocol: Ptr(corev1.ProtocolTCP),
+						},
+					},
+				},
+			},
+			// Deny all egress - Redis does not need outbound access
+			Egress: []networkingv1.NetworkPolicyEgressRule{},
+		},
+	}
+}

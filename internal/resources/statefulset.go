@@ -141,6 +141,12 @@ func buildMainContainer(instance *paperclipv1alpha1.Instance) corev1.Container {
 			AllowPrivilegeEscalation: Ptr(false),
 			ReadOnlyRootFilesystem:   Ptr(false), // Paperclip needs writable filesystem for node_modules, etc.
 			RunAsNonRoot:             Ptr(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
 		}
 	}
 
@@ -705,6 +711,16 @@ exit 1
 		Env:             buildEnvVars(instance),
 		EnvFrom:         instance.Spec.EnvFrom,
 		VolumeMounts:    buildVolumeMounts(instance),
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: Ptr(false),
+			RunAsNonRoot:             Ptr(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
 	}
 }
 

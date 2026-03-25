@@ -141,6 +141,7 @@ func BuildRedisStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Statefu
 				Spec: corev1.PodSpec{
 					Containers:                    []corev1.Container{container},
 					RestartPolicy:                 corev1.RestartPolicyAlways,
+					AutomountServiceAccountToken:  Ptr(false),
 					DNSPolicy:                     corev1.DNSClusterFirst,
 					SchedulerName:                 "default-scheduler",
 					TerminationGracePeriodSeconds: Ptr(int64(10)),
