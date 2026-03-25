@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.6.0...v0.7.0) (2026-03-25)
+
+
+### Features
+
+* add OAuth provider and email config to AuthSpec ([e2314a9](https://github.com/paperclipinc/paperclip-operator/commit/e2314a962eba340bd25435a6de041a2888a3d0fe))
+
+
+### Bug Fixes
+
+* align S3 env var names with server config ([#24](https://github.com/paperclipinc/paperclip-operator/issues/24)) ([af31956](https://github.com/paperclipinc/paperclip-operator/commit/af3195620c5a4699b77ec12fc0a42cbd5e06439f))
+* bootstrap job uses wrong health endpoint ([#21](https://github.com/paperclipinc/paperclip-operator/issues/21)) ([2011328](https://github.com/paperclipinc/paperclip-operator/commit/201132808a26b120706db31f526ffa4ced7ddcdd))
+* use /api/health/details for bootstrap status check ([2011328](https://github.com/paperclipinc/paperclip-operator/commit/201132808a26b120706db31f526ffa4ced7ddcdd))
+
 ## [0.6.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.5.2...v0.6.0) (2026-03-25)
 
 
