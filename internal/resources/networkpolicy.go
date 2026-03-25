@@ -10,6 +10,8 @@ import (
 )
 
 // BuildNetworkPolicy constructs the NetworkPolicy for a Instance.
+const managedMode = "managed"
+
 func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.NetworkPolicy {
 	port := servicePort(instance)
 	dnsPort := intstr.FromInt32(53)
@@ -77,7 +79,7 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 	}
 
 	// Allow egress to managed database if applicable
-	if instance.Spec.Database.Mode == "managed" || instance.Spec.Database.Mode == "" {
+	if instance.Spec.Database.Mode == managedMode || instance.Spec.Database.Mode == "" {
 		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
 			To: []networkingv1.NetworkPolicyPeer{
 				{
@@ -96,7 +98,7 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 	}
 
 	// Allow egress to managed Redis if applicable
-	if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == "managed" || instance.Spec.Redis.Mode == "") {
+	if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == managedMode || instance.Spec.Redis.Mode == "") {
 		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
 			To: []networkingv1.NetworkPolicyPeer{
 				{

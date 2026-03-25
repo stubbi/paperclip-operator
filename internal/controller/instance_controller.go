@@ -91,6 +91,7 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile moves the cluster state toward the desired state defined by the Instance CR.
@@ -264,6 +265,13 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if instance.Spec.Auth.AdminUser != nil {
 		if err := r.reconcileBootstrapJob(ctx, instance); err != nil {
 			return r.handleError(ctx, instance, "BootstrapJob", err)
+		}
+	}
+
+	// 11. Backup CronJob (optional)
+	if instance.Spec.Backup != nil {
+		if err := r.reconcileBackupCronJob(ctx, instance); err != nil {
+			return r.handleError(ctx, instance, "BackupCronJob", err)
 		}
 	}
 
@@ -775,6 +783,43 @@ func (r *InstanceReconciler) reconcileBootstrapJob(ctx context.Context, instance
 	}
 	if err := r.Create(ctx, desired); err != nil { // reconcile-guard:allow
 		return fmt.Errorf("creating bootstrap Job: %w", err)
+	}
+
+	return nil
+}
+
+func (r *InstanceReconciler) reconcileBackupCronJob(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	desired := resources.BuildBackupCronJob(instance)
+	if desired == nil {
+		// Backup not fully configured (e.g., no S3 bucket) — clean up any existing CronJob.
+		existing := &batchv1.CronJob{}
+		err := r.Get(ctx, types.NamespacedName{
+			Name:      resources.BackupCronJobName(instance),
+			Namespace: instance.Namespace,
+		}, existing)
+		if err == nil {
+			return r.Delete(ctx, existing)
+		}
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("checking backup CronJob: %w", err)
+	}
+
+	obj := &batchv1.CronJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desired.Name,
+			Namespace: desired.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, obj, func() error {
+		obj.Labels = desired.Labels
+		obj.Spec = desired.Spec
+		return controllerutil.SetControllerReference(instance, obj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling backup CronJob: %w", err)
 	}
 
 	return nil
