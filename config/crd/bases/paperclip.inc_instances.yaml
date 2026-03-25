@@ -339,6 +339,92 @@ spec:
                     - email
                     - passwordSecretRef
                     type: object
+                  apple:
+                    description: |-
+                      Apple configures Apple OAuth sign-in.
+                      The referenced Secret must contain APPLE_CLIENT_ID and APPLE_CLIENT_SECRET keys.
+                    properties:
+                      credentialsSecretRef:
+                        description: |-
+                          CredentialsSecretRef references a Secret containing provider-specific OAuth
+                          client credentials (e.g. GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - credentialsSecretRef
+                    type: object
+                  email:
+                    description: Email configures email sending for verification and
+                      password reset.
+                    properties:
+                      from:
+                        description: From is the sender address for outbound emails
+                          (e.g. "Paperclip <noreply@example.com>").
+                        type: string
+                      resendAPIKeySecretRef:
+                        description: ResendAPIKeySecretRef references a Secret key
+                          containing the Resend API key.
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      verificationRequired:
+                        description: VerificationRequired requires email verification
+                          before a session can be created.
+                        type: boolean
+                    type: object
+                  google:
+                    description: |-
+                      Google configures Google OAuth sign-in.
+                      The referenced Secret must contain GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET keys.
+                    properties:
+                      credentialsSecretRef:
+                        description: |-
+                          CredentialsSecretRef references a Secret containing provider-specific OAuth
+                          client credentials (e.g. GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+                        properties:
+                          name:
+                            default: ""
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    required:
+                    - credentialsSecretRef
+                    type: object
                   secretRef:
                     description: |-
                       SecretRef references a Secret containing the BETTER_AUTH_SECRET key.
