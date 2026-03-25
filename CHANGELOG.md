@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.7.0...v0.8.0) (2026-03-25)
+
+
+### Features
+
+* add DB backup CronJob builder ([4a4f4d2](https://github.com/paperclipinc/paperclip-operator/commit/4a4f4d275e3ca65aef4eb8508cd2249e08881550))
+* DB backup CronJob builder ([#26](https://github.com/paperclipinc/paperclip-operator/issues/26)) ([4a4f4d2](https://github.com/paperclipinc/paperclip-operator/commit/4a4f4d275e3ca65aef4eb8508cd2249e08881550))
+
 ## [0.7.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.6.0...v0.7.0) (2026-03-25)
 
 
