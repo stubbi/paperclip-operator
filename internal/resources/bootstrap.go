@@ -107,7 +107,9 @@ else
 fi
 
 # Step 2: Check if instance is already bootstrapped
-HEALTH=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" "$SERVER_URL/api/health" 2>/dev/null) || true
+# Use /api/health/details (authenticated) which includes bootstrapStatus;
+# the plain /api/health endpoint does not return this field.
+HEALTH=$(curl -sS -c "$COOKIE_JAR" -b "$COOKIE_JAR" "$SERVER_URL/api/health/details" 2>/dev/null) || true
 if echo "$HEALTH" | grep -q '"bootstrapStatus":"ready"'; then
   echo "Instance already bootstrapped. Nothing to do."
   rm -f "$COOKIE_JAR"
