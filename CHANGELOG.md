@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.5.2...v0.6.0) (2026-03-25)
+
+
+### Features
+
+* add Redis support for rate limiting ([#19](https://github.com/paperclipinc/paperclip-operator/issues/19)) ([2385c38](https://github.com/paperclipinc/paperclip-operator/commit/2385c38be293ccba4aba18b6d1895fe2323297b7))
+
 ## [0.5.2](https://github.com/paperclipinc/paperclip-operator/compare/v0.5.1...v0.5.2) (2026-03-24)
 
 
