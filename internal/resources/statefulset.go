@@ -253,6 +253,9 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_SECRETS_STRICT_MODE", Value: "true"})
 	}
 
+	// Auth: email delivery and OAuth providers
+	vars = append(vars, buildAuthEmailAndOAuthEnvVars(instance)...)
+
 	// Heartbeat scheduler
 	// When heartbeat is disabled, explicitly disable it on all pods.
 	// When enabled with multiple replicas, the command wrapper handles per-pod gating
@@ -392,6 +395,81 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 
 	// User-supplied env vars (last, so they can override defaults)
 	vars = append(vars, instance.Spec.Env...)
+
+	return vars
+}
+
+func buildAuthEmailAndOAuthEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
+	var vars []corev1.EnvVar
+
+	// Email (Resend)
+	if instance.Spec.Auth.Email != nil {
+		email := instance.Spec.Auth.Email
+		if email.ResendAPIKeySecretRef != nil {
+			vars = append(vars, corev1.EnvVar{
+				Name: "RESEND_API_KEY",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: email.ResendAPIKeySecretRef,
+				},
+			})
+		}
+		if email.From != "" {
+			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_EMAIL_FROM", Value: email.From})
+		}
+		if email.VerificationRequired {
+			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_EMAIL_VERIFICATION_REQUIRED", Value: "true"})
+		}
+	}
+
+	// Google OAuth
+	if instance.Spec.Auth.Google != nil {
+		secretRef := instance.Spec.Auth.Google.CredentialsSecretRef
+		vars = append(vars,
+			corev1.EnvVar{
+				Name: "GOOGLE_CLIENT_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: secretRef,
+						Key:                  "GOOGLE_CLIENT_ID",
+					},
+				},
+			},
+			corev1.EnvVar{
+				Name: "GOOGLE_CLIENT_SECRET",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: secretRef,
+						Key:                  "GOOGLE_CLIENT_SECRET",
+					},
+				},
+			},
+		)
+	}
+
+	// Apple OAuth
+	if instance.Spec.Auth.Apple != nil {
+		secretRef := instance.Spec.Auth.Apple.CredentialsSecretRef
+		vars = append(vars,
+			corev1.EnvVar{
+				Name: "APPLE_CLIENT_ID",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: secretRef,
+						Key:                  "APPLE_CLIENT_ID",
+					},
+				},
+			},
+			corev1.EnvVar{
+				Name: "APPLE_CLIENT_SECRET",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: secretRef,
+						Key:                  "APPLE_CLIENT_SECRET",
+					},
+				},
+			},
+		)
+	}
 
 	return vars
 }

@@ -262,6 +262,20 @@ type AuthSpec struct {
 	// a setup screen requiring manual bootstrap.
 	// +optional
 	AdminUser *AdminUserSpec `json:"adminUser,omitempty"`
+
+	// Email configures email sending for verification and password reset.
+	// +optional
+	Email *AuthEmailSpec `json:"email,omitempty"`
+
+	// Google configures Google OAuth sign-in.
+	// The referenced Secret must contain GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET keys.
+	// +optional
+	Google *OAuthProviderSpec `json:"google,omitempty"`
+
+	// Apple configures Apple OAuth sign-in.
+	// The referenced Secret must contain APPLE_CLIENT_ID and APPLE_CLIENT_SECRET keys.
+	// +optional
+	Apple *OAuthProviderSpec `json:"apple,omitempty"`
 }
 
 // AdminUserSpec configures the initial admin user for automatic bootstrap.
@@ -276,6 +290,28 @@ type AdminUserSpec struct {
 
 	// PasswordSecretRef references a Secret containing the admin password.
 	PasswordSecretRef corev1.SecretKeySelector `json:"passwordSecretRef"`
+}
+
+// AuthEmailSpec configures email delivery for auth flows.
+type AuthEmailSpec struct {
+	// ResendAPIKeySecretRef references a Secret key containing the Resend API key.
+	// +optional
+	ResendAPIKeySecretRef *corev1.SecretKeySelector `json:"resendAPIKeySecretRef,omitempty"`
+
+	// From is the sender address for outbound emails (e.g. "Paperclip <noreply@example.com>").
+	// +optional
+	From string `json:"from,omitempty"`
+
+	// VerificationRequired requires email verification before a session can be created.
+	// +optional
+	VerificationRequired bool `json:"verificationRequired,omitempty"`
+}
+
+// OAuthProviderSpec references credentials for a social OAuth provider.
+type OAuthProviderSpec struct {
+	// CredentialsSecretRef references a Secret containing provider-specific OAuth
+	// client credentials (e.g. GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).
+	CredentialsSecretRef corev1.LocalObjectReference `json:"credentialsSecretRef"`
 }
 
 // SecretsSpec configures Paperclip's built-in secrets management.
