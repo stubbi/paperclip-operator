@@ -274,12 +274,12 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 	if instance.Spec.ObjectStorage != nil {
 		os := instance.Spec.ObjectStorage
 		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_STORAGE_PROVIDER", Value: "s3"})
-		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_S3_BUCKET", Value: os.Bucket})
+		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_STORAGE_S3_BUCKET", Value: os.Bucket})
 		if os.Region != "" {
-			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_S3_REGION", Value: os.Region})
+			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_STORAGE_S3_REGION", Value: os.Region})
 		}
 		if os.Endpoint != "" {
-			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_S3_ENDPOINT", Value: os.Endpoint})
+			vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_STORAGE_S3_ENDPOINT", Value: os.Endpoint})
 		}
 		if os.CredentialsSecretRef != nil {
 			vars = append(vars,
