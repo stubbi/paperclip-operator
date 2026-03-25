@@ -56,6 +56,11 @@ const (
 	ConditionStatefulSetReady = "StatefulSetReady"
 	// ConditionServiceReady indicates the Service is ready.
 	ConditionServiceReady = "ServiceReady"
+	// ConditionRedisReady indicates the managed Redis is ready.
+	ConditionRedisReady = "RedisReady"
+
+	// ModeManaged is the value for managed resource modes (database, redis).
+	ModeManaged = "managed"
 
 	// AnnotationResolvedDigest is the pod template annotation that records the current resolved digest.
 	// Changing this annotation triggers a rolling restart.
@@ -80,8 +85,6 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="",resources=pods,verbs=create;delete;get;list;patch;watch
-// +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create;get
-// +kubebuilder:rbac:groups="",resources=pods/log,verbs=get
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
@@ -175,9 +178,16 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// 2. Database (if managed)
-	if instance.Spec.Database.Mode == "managed" || instance.Spec.Database.Mode == "" {
+	if instance.Spec.Database.Mode == ModeManaged || instance.Spec.Database.Mode == "" {
 		if err := r.reconcileManagedDatabase(ctx, instance); err != nil {
 			return r.handleError(ctx, instance, "Database", err)
+		}
+	}
+
+	// 2.5. Redis (if managed)
+	if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == ModeManaged || instance.Spec.Redis.Mode == "") {
+		if err := r.reconcileManagedRedis(ctx, instance); err != nil {
+			return r.handleError(ctx, instance, "Redis", err)
 		}
 	}
 
@@ -221,6 +231,18 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if instance.Spec.Security.NetworkPolicy.Enabled {
 		if err := r.reconcileNetworkPolicy(ctx, instance); err != nil {
 			return r.handleError(ctx, instance, "NetworkPolicy", err)
+		}
+		// Database NetworkPolicy (when managed)
+		if instance.Spec.Database.Mode == ModeManaged || instance.Spec.Database.Mode == "" {
+			if err := r.reconcileDatabaseNetworkPolicy(ctx, instance); err != nil {
+				return r.handleError(ctx, instance, "DatabaseNetworkPolicy", err)
+			}
+		}
+		// Redis NetworkPolicy (when managed)
+		if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == ModeManaged || instance.Spec.Redis.Mode == "") {
+			if err := r.reconcileRedisNetworkPolicy(ctx, instance); err != nil {
+				return r.handleError(ctx, instance, "RedisNetworkPolicy", err)
+			}
 		}
 	}
 
@@ -405,6 +427,75 @@ func (r *InstanceReconciler) reconcileManagedDatabase(ctx context.Context, insta
 	return nil
 }
 
+func (r *InstanceReconciler) reconcileManagedRedis(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	// Redis PVC
+	pvc := &corev1.PersistentVolumeClaim{}
+	pvcName := resources.RedisPVCName(instance)
+	err := r.Get(ctx, types.NamespacedName{Name: pvcName, Namespace: instance.Namespace}, pvc)
+	if apierrors.IsNotFound(err) {
+		desired := resources.BuildRedisPVC(instance)
+		if setErr := controllerutil.SetControllerReference(instance, desired, r.Scheme); setErr != nil {
+			return fmt.Errorf("setting owner reference on Redis PVC: %w", setErr)
+		}
+		if createErr := r.Create(ctx, desired); createErr != nil {
+			return fmt.Errorf("creating Redis PVC: %w", createErr)
+		}
+		instance.Status.ManagedResources.RedisPVC = pvcName
+	} else if err != nil {
+		return fmt.Errorf("getting Redis PVC: %w", err)
+	}
+
+	// Redis Service
+	desiredSvc := resources.BuildRedisService(instance)
+	svcObj := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desiredSvc.Name,
+			Namespace: desiredSvc.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, svcObj, func() error {
+		svcObj.Labels = desiredSvc.Labels
+		svcObj.Spec.Selector = desiredSvc.Spec.Selector
+		svcObj.Spec.Ports = desiredSvc.Spec.Ports
+		svcObj.Spec.Type = desiredSvc.Spec.Type
+		svcObj.Spec.SessionAffinity = desiredSvc.Spec.SessionAffinity
+		return controllerutil.SetControllerReference(instance, svcObj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling Redis Service: %w", err)
+	}
+	instance.Status.ManagedResources.RedisService = svcObj.Name
+
+	// Redis StatefulSet
+	desiredSts := resources.BuildRedisStatefulSet(instance)
+	stsObj := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desiredSts.Name,
+			Namespace: desiredSts.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, stsObj, func() error {
+		stsObj.Labels = desiredSts.Labels
+		stsObj.Spec = desiredSts.Spec
+		return controllerutil.SetControllerReference(instance, stsObj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling Redis StatefulSet: %w", err)
+	}
+	instance.Status.ManagedResources.RedisStatefulSet = stsObj.Name
+
+	// Set Redis condition
+	meta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{
+		Type:               ConditionRedisReady,
+		Status:             metav1.ConditionTrue,
+		Reason:             "RedisProvisioned",
+		Message:            "Managed Redis is provisioned",
+		ObservedGeneration: instance.Generation,
+	})
+
+	return nil
+}
+
 func (r *InstanceReconciler) ensureDatabaseSecret(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	secret := &corev1.Secret{}
 	secretName := resources.DatabaseSecretName(instance)
@@ -576,6 +667,46 @@ func (r *InstanceReconciler) reconcileNetworkPolicy(ctx context.Context, instanc
 	}
 
 	instance.Status.ManagedResources.NetworkPolicy = obj.Name
+	return nil
+}
+
+func (r *InstanceReconciler) reconcileDatabaseNetworkPolicy(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	desired := resources.BuildDatabaseNetworkPolicy(instance)
+	obj := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desired.Name,
+			Namespace: desired.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, obj, func() error {
+		obj.Labels = desired.Labels
+		obj.Spec = desired.Spec
+		return controllerutil.SetControllerReference(instance, obj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling database NetworkPolicy: %w", err)
+	}
+	return nil
+}
+
+func (r *InstanceReconciler) reconcileRedisNetworkPolicy(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	desired := resources.BuildRedisNetworkPolicy(instance)
+	obj := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desired.Name,
+			Namespace: desired.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, obj, func() error {
+		obj.Labels = desired.Labels
+		obj.Spec = desired.Spec
+		return controllerutil.SetControllerReference(instance, obj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling Redis NetworkPolicy: %w", err)
+	}
 	return nil
 }
 

@@ -141,6 +141,12 @@ func buildMainContainer(instance *paperclipv1alpha1.Instance) corev1.Container {
 			AllowPrivilegeEscalation: Ptr(false),
 			ReadOnlyRootFilesystem:   Ptr(false), // Paperclip needs writable filesystem for node_modules, etc.
 			RunAsNonRoot:             Ptr(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
 		}
 	}
 
@@ -293,6 +299,29 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 					},
 				},
 			)
+		}
+	}
+
+	// Redis
+	if instance.Spec.Redis != nil {
+		redis := instance.Spec.Redis
+		switch redis.Mode {
+		case "external":
+			if redis.ExternalURLSecretRef != nil {
+				vars = append(vars, corev1.EnvVar{
+					Name: "PAPERCLIP_RATE_LIMIT_REDIS_URL",
+					ValueFrom: &corev1.EnvVarSource{
+						SecretKeyRef: redis.ExternalURLSecretRef,
+					},
+				})
+			} else if redis.ExternalURL != "" {
+				vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_RATE_LIMIT_REDIS_URL", Value: redis.ExternalURL})
+			}
+		default: // "managed" or empty
+			vars = append(vars, corev1.EnvVar{
+				Name:  "PAPERCLIP_RATE_LIMIT_REDIS_URL",
+				Value: RedisURL(instance),
+			})
 		}
 	}
 
@@ -682,6 +711,16 @@ exit 1
 		Env:             buildEnvVars(instance),
 		EnvFrom:         instance.Spec.EnvFrom,
 		VolumeMounts:    buildVolumeMounts(instance),
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: Ptr(false),
+			RunAsNonRoot:             Ptr(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
 	}
 }
 

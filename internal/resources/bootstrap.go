@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -9,6 +10,17 @@ import (
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 )
+
+// sanitizeJSONString escapes special characters for safe embedding in a JSON string literal
+// inside a shell script. Prevents JSON injection via user-controlled CRD fields.
+func sanitizeJSONString(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	s = strings.ReplaceAll(s, "\n", `\n`)
+	s = strings.ReplaceAll(s, "\r", `\r`)
+	s = strings.ReplaceAll(s, "\t", `\t`)
+	return s
+}
 
 // BootstrapJobName returns the bootstrap Job name for an Instance.
 func BootstrapJobName(instance *paperclipv1alpha1.Instance) string {
@@ -28,7 +40,7 @@ func BuildBootstrapJob(instance *paperclipv1alpha1.Instance) *batchv1.Job {
 	port := servicePort(instance)
 	svcName := ServiceName(instance)
 
-	adminName := admin.Name
+	adminName := sanitizeJSONString(admin.Name)
 	if adminName == "" {
 		adminName = "Admin"
 	}
@@ -156,10 +168,17 @@ echo "Admin bootstrap finished successfully."
 					Labels: LabelsWithComponent(instance, "bootstrap"),
 				},
 				Spec: corev1.PodSpec{
-					RestartPolicy:    corev1.RestartPolicyOnFailure,
-					NodeSelector:     instance.Spec.Availability.NodeSelector,
-					Tolerations:      instance.Spec.Availability.Tolerations,
-					ImagePullSecrets: instance.Spec.Image.PullSecrets,
+					RestartPolicy:                corev1.RestartPolicyOnFailure,
+					AutomountServiceAccountToken: Ptr(false),
+					NodeSelector:                 instance.Spec.Availability.NodeSelector,
+					Tolerations:                  instance.Spec.Availability.Tolerations,
+					ImagePullSecrets:             instance.Spec.Image.PullSecrets,
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsNonRoot: Ptr(true),
+						RunAsUser:    Ptr(int64(1000)),
+						RunAsGroup:   Ptr(int64(1000)),
+						FSGroup:      Ptr(int64(1000)),
+					},
 					Containers: []corev1.Container{
 						{
 							Name:            "bootstrap",
@@ -167,6 +186,16 @@ echo "Admin bootstrap finished successfully."
 							ImagePullPolicy: imagePullPolicy(instance),
 							Command:         []string{"/bin/sh", "-c"},
 							Args:            []string{script},
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: Ptr(false),
+								RunAsNonRoot:             Ptr(true),
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: corev1.SeccompProfileTypeRuntimeDefault,
+								},
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+							},
 							Env: append(buildEnvVars(instance),
 								corev1.EnvVar{
 									Name:  "ADMIN_EMAIL",
