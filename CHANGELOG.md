@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.8.0...v0.9.0) (2026-03-30)
+
+
+### Features
+
+* auto-generate secrets master key and multi-namespace sandbox RBAC ([#31](https://github.com/paperclipinc/paperclip-operator/issues/31)) ([66009de](https://github.com/paperclipinc/paperclip-operator/commit/66009deea812d811cb83f67e965aac6ca95deba0)), closes [#29](https://github.com/paperclipinc/paperclip-operator/issues/29)
+
+
+### Bug Fixes
+
+* exclude Ready condition from its own aggregation loop ([#30](https://github.com/paperclipinc/paperclip-operator/issues/30)) ([257ec9d](https://github.com/paperclipinc/paperclip-operator/commit/257ec9d629985f442296b59e6199869844765f66)), closes [#28](https://github.com/paperclipinc/paperclip-operator/issues/28)
+
 ## [0.8.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.7.0...v0.8.0) (2026-03-25)
 
 
