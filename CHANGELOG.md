@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.9.0...v0.9.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* add namespaces, pods/exec, pods/log to operator RBAC ([#33](https://github.com/paperclipinc/paperclip-operator/issues/33)) ([5bc541c](https://github.com/paperclipinc/paperclip-operator/commit/5bc541cb0791fc144504561e0601eb1183fbc1e9))
+
 ## [0.9.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.8.0...v0.9.0) (2026-03-30)
 
 
