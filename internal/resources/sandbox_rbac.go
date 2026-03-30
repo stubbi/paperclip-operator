@@ -81,11 +81,23 @@ func BuildSandboxClusterRole(instance *paperclipv1alpha1.Instance) *rbacv1.Clust
 	}
 
 	// Namespace management for multi-namespace isolation
-	rules = append(rules, rbacv1.PolicyRule{
-		APIGroups: []string{""},
-		Resources: []string{"namespaces"},
-		Verbs:     []string{"create", "get", "list"},
-	})
+	rules = append(rules,
+		rbacv1.PolicyRule{
+			APIGroups: []string{""},
+			Resources: []string{"namespaces"},
+			Verbs:     []string{"create", "get", "list", "delete"},
+		},
+		rbacv1.PolicyRule{
+			APIGroups: []string{""},
+			Resources: []string{"services", "serviceaccounts"},
+			Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+		},
+		rbacv1.PolicyRule{
+			APIGroups: []string{"rbac.authorization.k8s.io"},
+			Resources: []string{"roles", "rolebindings"},
+			Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
+		},
+	)
 
 	return &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{

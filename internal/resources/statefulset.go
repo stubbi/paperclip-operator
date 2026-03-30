@@ -247,6 +247,19 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 				SecretKeyRef: instance.Spec.Secrets.MasterKeySecretRef,
 			},
 		})
+	} else {
+		// Always inject from auto-generated secret to ensure all replicas share the same key
+		vars = append(vars, corev1.EnvVar{
+			Name: "PAPERCLIP_SECRETS_MASTER_KEY",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: SecretsMasterKeySecretName(instance),
+					},
+					Key: "master-key",
+				},
+			},
+		})
 	}
 
 	if instance.Spec.Secrets.StrictMode {

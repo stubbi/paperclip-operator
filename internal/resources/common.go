@@ -191,3 +191,8 @@ func PDBName(instance *paperclipv1alpha1.Instance) string {
 func DatabaseSecretName(instance *paperclipv1alpha1.Instance) string {
 	return instance.Name + "-db-credentials"
 }
+
+// SecretsMasterKeySecretName returns the auto-generated secrets master key secret name.
+func SecretsMasterKeySecretName(instance *paperclipv1alpha1.Instance) string {
+	return instance.Name + "-secrets-master-key"
+}
