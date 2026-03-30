@@ -93,6 +93,7 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile moves the cluster state toward the desired state defined by the Instance CR.
 //
@@ -139,6 +140,13 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if controllerutil.ContainsFinalizer(instance, FinalizerName) {
 			log.Info("Handling finalizer cleanup")
 			r.setPhase(ctx, instance, paperclipv1alpha1.PhaseTerminating)
+
+			// Clean up cluster-scoped resources (can't use owner references)
+			if err := r.cleanupClusterScopedResources(ctx, instance); err != nil {
+				log.Error(err, "Failed to cleanup cluster-scoped resources")
+				return ctrl.Result{}, err
+			}
+
 			controllerutil.RemoveFinalizer(instance, FinalizerName)
 			if err := r.Update(ctx, instance); err != nil { // reconcile-guard:allow
 				return ctrl.Result{}, err
@@ -163,6 +171,11 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	// Reconcile all resources
 	r.setPhase(ctx, instance, paperclipv1alpha1.PhaseProvisioning)
+
+	// 0. Ensure shared secrets master key exists (before StatefulSet needs it)
+	if err := r.ensureSecretsMasterKey(ctx, instance); err != nil {
+		return r.handleError(ctx, instance, "SecretsMasterKey", err)
+	}
 
 	// 1. ServiceAccount
 	if instance.Spec.Security.RBAC.Create {
@@ -358,6 +371,40 @@ func (r *InstanceReconciler) reconcileSandboxRBAC(ctx context.Context, instance 
 		return fmt.Errorf("reconciling sandbox RoleBinding: %w", err)
 	}
 
+	// ClusterRole + ClusterRoleBinding for multi-namespace sandbox isolation
+	if cs.MultiNamespace {
+		desiredCR := resources.BuildSandboxClusterRole(instance)
+		crObj := &rbacv1.ClusterRole{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: desiredCR.Name,
+			},
+		}
+		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, crObj, func() error {
+			crObj.Labels = desiredCR.Labels
+			crObj.Rules = desiredCR.Rules
+			return nil // no owner reference for cluster-scoped resources
+		})
+		if err != nil {
+			return fmt.Errorf("reconciling sandbox ClusterRole: %w", err)
+		}
+
+		desiredCRB := resources.BuildSandboxClusterRoleBinding(instance)
+		crbObj := &rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: desiredCRB.Name,
+			},
+		}
+		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, crbObj, func() error {
+			crbObj.Labels = desiredCRB.Labels
+			crbObj.RoleRef = desiredCRB.RoleRef
+			crbObj.Subjects = desiredCRB.Subjects
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("reconciling sandbox ClusterRoleBinding: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -523,6 +570,53 @@ func (r *InstanceReconciler) ensureDatabaseSecret(ctx context.Context, instance 
 		return nil
 	}
 	return err
+}
+
+func (r *InstanceReconciler) ensureSecretsMasterKey(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	// Skip if the user provided their own master key secret reference
+	if instance.Spec.Secrets.MasterKeySecretRef != nil {
+		return nil
+	}
+
+	secret := &corev1.Secret{}
+	secretName := resources.SecretsMasterKeySecretName(instance)
+	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: instance.Namespace}, secret)
+	if apierrors.IsNotFound(err) {
+		key, genErr := generatePassword(32)
+		if genErr != nil {
+			return fmt.Errorf("generating secrets master key: %w", genErr)
+		}
+		desired := resources.BuildSecretsMasterKeySecret(instance, key)
+		if setErr := controllerutil.SetControllerReference(instance, desired, r.Scheme); setErr != nil {
+			return fmt.Errorf("setting owner reference on secrets master key: %w", setErr)
+		}
+		if createErr := r.Create(ctx, desired); createErr != nil {
+			return fmt.Errorf("creating secrets master key: %w", createErr)
+		}
+		return nil
+	}
+	return err
+}
+
+func (r *InstanceReconciler) cleanupClusterScopedResources(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	// Clean up sandbox ClusterRole
+	cr := &rbacv1.ClusterRole{}
+	crName := resources.SandboxClusterRoleName(instance)
+	if err := r.Get(ctx, types.NamespacedName{Name: crName}, cr); err == nil {
+		if err := r.Delete(ctx, cr); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("deleting sandbox ClusterRole: %w", err)
+		}
+	}
+
+	// Clean up sandbox ClusterRoleBinding
+	crb := &rbacv1.ClusterRoleBinding{}
+	if err := r.Get(ctx, types.NamespacedName{Name: crName}, crb); err == nil {
+		if err := r.Delete(ctx, crb); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("deleting sandbox ClusterRoleBinding: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (r *InstanceReconciler) reconcilePVC(ctx context.Context, instance *paperclipv1alpha1.Instance) error {

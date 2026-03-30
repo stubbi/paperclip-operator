@@ -186,3 +186,14 @@ func BuildDatabaseSecret(instance *paperclipv1alpha1.Instance, password string) 
 		},
 	}
 }
+
+// BuildSecretsMasterKeySecret constructs a Secret containing the auto-generated master encryption key.
+func BuildSecretsMasterKeySecret(instance *paperclipv1alpha1.Instance, key string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: ObjectMeta(instance, SecretsMasterKeySecretName(instance)),
+		Type:       corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"master-key": []byte(key),
+		},
+	}
+}
