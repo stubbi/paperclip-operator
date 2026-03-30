@@ -829,13 +829,7 @@ func (r *InstanceReconciler) updateStatus(ctx context.Context, instance *papercl
 	instance.Status.ObservedGeneration = instance.Generation
 
 	// Determine overall phase
-	allReady := true
-	for _, cond := range instance.Status.Conditions {
-		if cond.Status != metav1.ConditionTrue {
-			allReady = false
-			break
-		}
-	}
+	allReady := allSubConditionsReady(instance.Status.Conditions)
 
 	if allReady && len(instance.Status.Conditions) > 0 {
 		instance.Status.Phase = paperclipv1alpha1.PhaseRunning
@@ -870,6 +864,22 @@ func (r *InstanceReconciler) updateStatus(ctx context.Context, instance *papercl
 	}
 
 	return r.Status().Update(ctx, instance)
+}
+
+// allSubConditionsReady returns true when every condition except ConditionReady
+// has Status=True. The Ready condition itself is excluded to avoid a
+// self-referential loop where a previous Ready=False prevents the aggregate
+// from ever becoming true.
+func allSubConditionsReady(conditions []metav1.Condition) bool {
+	for _, cond := range conditions {
+		if cond.Type == ConditionReady {
+			continue
+		}
+		if cond.Status != metav1.ConditionTrue {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *InstanceReconciler) setPhase(_ context.Context, instance *paperclipv1alpha1.Instance, phase paperclipv1alpha1.InstancePhase) {
