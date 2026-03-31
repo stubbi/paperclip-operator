@@ -183,8 +183,10 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		{Name: "PAPERCLIP_DEPLOYMENT_EXPOSURE", Value: instance.Spec.Deployment.Exposure},
 	}
 
-	// OpenTelemetry
+	// OpenTelemetry - load instrumentation before the app so OTEL can
+	// hook into HTTP/Express/pg modules at require time.
 	vars = append(vars,
+		corev1.EnvVar{Name: "NODE_OPTIONS", Value: "--import ./server/dist/instrumentation.js"},
 		corev1.EnvVar{Name: "OTEL_EXPORTER_OTLP_ENDPOINT", Value: "http://otel-collector.observability.svc.cluster.local:4317"},
 		corev1.EnvVar{Name: "OTEL_SERVICE_NAME", Value: instance.Name},
 		corev1.EnvVar{
