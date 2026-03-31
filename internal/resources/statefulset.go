@@ -85,6 +85,11 @@ func BuildStatefulSet(instance *paperclipv1alpha1.Instance, extraPodAnnotations 
 		podAnnotations[k] = v
 	}
 
+	// Prometheus scrape annotations
+	podAnnotations["prometheus.io/scrape"] = "true"
+	podAnnotations["prometheus.io/port"] = fmt.Sprintf("%d", servicePort(instance))
+	podAnnotations["prometheus.io/path"] = "/metrics"
+
 	sts := &appsv1.StatefulSet{
 		ObjectMeta: ObjectMeta(instance, StatefulSetName(instance)),
 		Spec: appsv1.StatefulSetSpec{
@@ -177,6 +182,16 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		{Name: "PAPERCLIP_DEPLOYMENT_MODE", Value: instance.Spec.Deployment.Mode},
 		{Name: "PAPERCLIP_DEPLOYMENT_EXPOSURE", Value: instance.Spec.Deployment.Exposure},
 	}
+
+	// OpenTelemetry
+	vars = append(vars,
+		corev1.EnvVar{Name: "OTEL_EXPORTER_OTLP_ENDPOINT", Value: "http://otel-collector.observability.svc.cluster.local:4317"},
+		corev1.EnvVar{Name: "OTEL_SERVICE_NAME", Value: instance.Name},
+		corev1.EnvVar{
+			Name:  "OTEL_RESOURCE_ATTRIBUTES",
+			Value: fmt.Sprintf("k8s.namespace.name=%s,k8s.statefulset.name=%s", instance.Namespace, StatefulSetName(instance)),
+		},
+	)
 
 	// Public URL
 	if instance.Spec.Deployment.PublicURL != "" {
