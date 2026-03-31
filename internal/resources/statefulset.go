@@ -197,7 +197,7 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 
 	// Database URL
 	switch instance.Spec.Database.Mode {
-	case "external":
+	case ModeExternal:
 		if instance.Spec.Database.ExternalURLSecretRef != nil {
 			vars = append(vars, corev1.EnvVar{
 				Name: "DATABASE_URL",
@@ -322,7 +322,7 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 	if instance.Spec.Redis != nil {
 		redis := instance.Spec.Redis
 		switch redis.Mode {
-		case "external":
+		case ModeExternal:
 			if redis.ExternalURLSecretRef != nil {
 				vars = append(vars, corev1.EnvVar{
 					Name: "PAPERCLIP_RATE_LIMIT_REDIS_URL",

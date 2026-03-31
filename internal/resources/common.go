@@ -40,6 +40,9 @@ const (
 	// DatabaseMountPath is the mount path for the PostgreSQL data volume.
 	DatabaseMountPath = "/var/lib/postgresql/data"
 
+	// ModeExternal is the value for external resource modes (database, redis).
+	ModeExternal = "external"
+
 	// HealthPath is the HTTP health check path.
 	HealthPath = "/api/health"
 
