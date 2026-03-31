@@ -174,6 +174,7 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		{Name: "HOST", Value: "0.0.0.0"},
 		{Name: "PAPERCLIP_HOME", Value: DataMountPath},
 		{Name: "SERVE_UI", Value: "true"},
+		{Name: "TRUST_PROXY", Value: "1"},
 		{Name: "PAPERCLIP_DEPLOYMENT_MODE", Value: instance.Spec.Deployment.Mode},
 		{Name: "PAPERCLIP_DEPLOYMENT_EXPOSURE", Value: instance.Spec.Deployment.Exposure},
 	}
