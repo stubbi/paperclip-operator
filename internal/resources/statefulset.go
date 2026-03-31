@@ -82,8 +82,9 @@ func BuildStatefulSet(instance *paperclipv1alpha1.Instance, extraPodAnnotations 
 				{Name: DataVolumeName, MountPath: DataMountPath},
 			},
 			SecurityContext: &corev1.SecurityContext{
-				Privileged: Ptr(true),
-				RunAsUser:  Ptr(int64(0)),
+				Privileged:   Ptr(true),
+				RunAsUser:    Ptr(int64(0)),
+				RunAsNonRoot: Ptr(false),
 			},
 		})
 	}
