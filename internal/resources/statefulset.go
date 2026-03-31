@@ -63,32 +63,6 @@ func BuildStatefulSet(instance *paperclipv1alpha1.Instance, extraPodAnnotations 
 		podSpec.TopologySpreadConstraints = instance.Spec.Availability.TopologySpreadConstraints
 	}
 
-	// SELinux relabel init container: ensures the data volume labels match
-	// the pod's SELinux context. Required because Kubernetes may assign MCS
-	// categories to the volume that differ from the pod's level, making
-	// the data inaccessible. Runs as privileged to perform chcon.
-	if instance.Spec.Storage.Persistence.Enabled {
-		seLevel := "s0"
-		if instance.Spec.Security.PodSecurityContext != nil &&
-			instance.Spec.Security.PodSecurityContext.SELinuxOptions != nil &&
-			instance.Spec.Security.PodSecurityContext.SELinuxOptions.Level != "" {
-			seLevel = instance.Spec.Security.PodSecurityContext.SELinuxOptions.Level
-		}
-		podSpec.InitContainers = append(podSpec.InitContainers, corev1.Container{
-			Name:    "selinux-relabel",
-			Image:   "fedora:latest",
-			Command: []string{"chcon", "-R", "system_u:object_r:container_file_t:" + seLevel, DataMountPath},
-			VolumeMounts: []corev1.VolumeMount{
-				{Name: DataVolumeName, MountPath: DataMountPath},
-			},
-			SecurityContext: &corev1.SecurityContext{
-				Privileged:   Ptr(true),
-				RunAsUser:    Ptr(int64(0)),
-				RunAsNonRoot: Ptr(false),
-			},
-		})
-	}
-
 	// Onboarding init container: runs non-interactive setup and admin bootstrap
 	// before the server starts. Only runs when config doesn't exist yet.
 	podSpec.InitContainers = append(podSpec.InitContainers, buildOnboardInitContainer(instance))
