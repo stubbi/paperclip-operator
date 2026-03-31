@@ -78,8 +78,10 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 		})
 	}
 
-	// Allow egress to managed database if applicable
-	if instance.Spec.Database.Mode == managedMode || instance.Spec.Database.Mode == "" {
+	// Allow egress to database
+	switch instance.Spec.Database.Mode {
+	case managedMode, "":
+		// Managed: restrict to the operator-created database pods
 		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
 			To: []networkingv1.NetworkPolicyPeer{
 				{
@@ -88,6 +90,16 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 					},
 				},
 			},
+			Ports: []networkingv1.NetworkPolicyPort{
+				{
+					Port:     Ptr(intstr.FromInt32(PostgreSQLPort)),
+					Protocol: Ptr(corev1.ProtocolTCP),
+				},
+			},
+		})
+	case ModeExternal:
+		// External: allow egress to PostgreSQL port (any destination)
+		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
 			Ports: []networkingv1.NetworkPolicyPort{
 				{
 					Port:     Ptr(intstr.FromInt32(PostgreSQLPort)),

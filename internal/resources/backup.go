@@ -235,7 +235,7 @@ func buildBackupDBEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar 
 	var vars []corev1.EnvVar
 
 	switch instance.Spec.Database.Mode {
-	case "external":
+	case ModeExternal:
 		if instance.Spec.Database.ExternalURLSecretRef != nil {
 			vars = append(vars, corev1.EnvVar{
 				Name: "DATABASE_URL",
