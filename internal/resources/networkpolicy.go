@@ -123,23 +123,35 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 		})
 	}
 
-	// Allow egress to managed Redis if applicable
-	if instance.Spec.Redis != nil && (instance.Spec.Redis.Mode == managedMode || instance.Spec.Redis.Mode == "") {
-		np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
-			To: []networkingv1.NetworkPolicyPeer{
-				{
-					PodSelector: &metav1.LabelSelector{
-						MatchLabels: RedisSelectorLabels(instance),
+	// Allow egress to Redis
+	if instance.Spec.Redis != nil {
+		switch instance.Spec.Redis.Mode {
+		case managedMode, "":
+			np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
+				To: []networkingv1.NetworkPolicyPeer{
+					{
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: RedisSelectorLabels(instance),
+						},
 					},
 				},
-			},
-			Ports: []networkingv1.NetworkPolicyPort{
-				{
-					Port:     Ptr(intstr.FromInt32(RedisPort)),
-					Protocol: Ptr(corev1.ProtocolTCP),
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Port:     Ptr(intstr.FromInt32(RedisPort)),
+						Protocol: Ptr(corev1.ProtocolTCP),
+					},
 				},
-			},
-		})
+			})
+		case ModeExternal:
+			np.Spec.Egress = append(np.Spec.Egress, networkingv1.NetworkPolicyEgressRule{
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Port:     Ptr(intstr.FromInt32(RedisPort)),
+						Protocol: Ptr(corev1.ProtocolTCP),
+					},
+				},
+			})
+		}
 	}
 
 	// Custom ingress CIDRs
