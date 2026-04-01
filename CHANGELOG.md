@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.10.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.9.1...v0.10.0) (2026-04-01)
+
+
+### Features
+
+* inject OTEL env vars and Prometheus scrape annotations ([#37](https://github.com/paperclipinc/paperclip-operator/issues/37)) ([c10a83a](https://github.com/paperclipinc/paperclip-operator/commit/c10a83a514a8c1a46ff31082d0ac6078e0753494))
+
+
+### Bug Fixes
+
+* add NODE_OPTIONS to preload OTEL instrumentation ([#39](https://github.com/paperclipinc/paperclip-operator/issues/39)) ([9c16a85](https://github.com/paperclipinc/paperclip-operator/commit/9c16a8537cf422f794979072778e899fb11d8fb2))
+* add NODE_OPTIONS to preload OTEL instrumentation before app start ([9c16a85](https://github.com/paperclipinc/paperclip-operator/commit/9c16a8537cf422f794979072778e899fb11d8fb2))
+* add SELinux relabel init container for persistent volumes ([#41](https://github.com/paperclipinc/paperclip-operator/issues/41)) ([93df250](https://github.com/paperclipinc/paperclip-operator/commit/93df250d6a4089febfdd037313f7117f2de5d6a6))
+* allow OTEL collector egress in NetworkPolicy ([#40](https://github.com/paperclipinc/paperclip-operator/issues/40)) ([dc26f4f](https://github.com/paperclipinc/paperclip-operator/commit/dc26f4fb941bedd4db0c4067d3ec0f8c64aa117a))
+* allow OTEL collector egress in NetworkPolicy (ports 4317/4318) ([dc26f4f](https://github.com/paperclipinc/paperclip-operator/commit/dc26f4fb941bedd4db0c4067d3ec0f8c64aa117a))
+* allow PostgreSQL egress in NetworkPolicy for external databases ([#36](https://github.com/paperclipinc/paperclip-operator/issues/36)) ([56939c8](https://github.com/paperclipinc/paperclip-operator/commit/56939c83b4645e724d9e59205fea014151587b9d))
+* allow Redis egress in NetworkPolicy for external mode ([#44](https://github.com/paperclipinc/paperclip-operator/issues/44)) ([94fc4a0](https://github.com/paperclipinc/paperclip-operator/commit/94fc4a0ad72b4b6ec333b78ec0bcedf0d1f85f82))
+* set runAsNonRoot=false on SELinux relabel init container ([#42](https://github.com/paperclipinc/paperclip-operator/issues/42)) ([d6aac33](https://github.com/paperclipinc/paperclip-operator/commit/d6aac338a51981885912eb74369ec7e10bbf987c))
+
 ## [0.9.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.9.0...v0.9.1) (2026-03-30)
 
 
