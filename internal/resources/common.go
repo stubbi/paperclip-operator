@@ -1,6 +1,7 @@
 package resources
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
@@ -198,4 +199,23 @@ func DatabaseSecretName(instance *paperclipv1alpha1.Instance) string {
 // SecretsMasterKeySecretName returns the auto-generated secrets master key secret name.
 func SecretsMasterKeySecretName(instance *paperclipv1alpha1.Instance) string {
 	return instance.Name + "-secrets-master-key"
+}
+
+// paperclipContainerSecurityContext returns the security context for containers
+// running the Paperclip image. If the user has provided a custom security context
+// via the CRD, it is used; otherwise the restricted-PSS-compliant default is returned.
+func paperclipContainerSecurityContext(instance *paperclipv1alpha1.Instance) *corev1.SecurityContext {
+	if instance.Spec.Security.ContainerSecurityContext != nil {
+		return instance.Spec.Security.ContainerSecurityContext
+	}
+	return &corev1.SecurityContext{
+		AllowPrivilegeEscalation: Ptr(false),
+		RunAsNonRoot:             Ptr(true),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+	}
 }
