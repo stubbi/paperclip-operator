@@ -156,6 +156,11 @@ func IngressName(instance *paperclipv1alpha1.Instance) string {
 	return instance.Name
 }
 
+// HTTPRouteName returns the HTTPRoute name for a Instance.
+func HTTPRouteName(instance *paperclipv1alpha1.Instance) string {
+	return instance.Name
+}
+
 // ServiceAccountName returns the ServiceAccount name for a Instance.
 func ServiceAccountName(instance *paperclipv1alpha1.Instance) string {
 	return instance.Name

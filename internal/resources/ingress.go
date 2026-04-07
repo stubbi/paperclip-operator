@@ -9,7 +9,7 @@ import (
 // BuildIngress constructs the Ingress for a Instance.
 func BuildIngress(instance *paperclipv1alpha1.Instance) *networkingv1.Ingress {
 	ing := instance.Spec.Networking.Ingress
-	if ing == nil {
+	if ing == nil || !ing.Enabled {
 		return nil
 	}
 

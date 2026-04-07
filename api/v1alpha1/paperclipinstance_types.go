@@ -187,7 +187,7 @@ type DeploymentSpec struct {
 	// +optional
 	Mode string `json:"mode,omitempty"`
 
-	// Exposure controls network exposure: "private" (ClusterIP only) or "public" (Ingress/LoadBalancer).
+	// Exposure controls network exposure: "private" (ClusterIP only) or "public" (Ingress/HTTPRoute/LoadBalancer).
 	// +kubebuilder:default="private"
 	// +kubebuilder:validation:Enum=private;public
 	// +optional
@@ -619,7 +619,8 @@ type RBACSpec struct {
 	ServiceAccountAnnotations map[string]string `json:"serviceAccountAnnotations,omitempty"`
 }
 
-// NetworkingSpec configures service and ingress.
+// +kubebuilder:validation:XValidation:rule="!(has(self.ingress) && self.ingress.enabled && has(self.httpRoute) && self.httpRoute.enabled)",message="ingress and httpRoute cannot both be enabled"
+// NetworkingSpec configures service, ingress, and HTTPRoute exposure.
 type NetworkingSpec struct {
 	// Service configures the Kubernetes Service.
 	// +optional
@@ -628,6 +629,10 @@ type NetworkingSpec struct {
 	// Ingress configures the Kubernetes Ingress.
 	// +optional
 	Ingress *IngressSpec `json:"ingress,omitempty"`
+
+	// HTTPRoute configures a Gateway API HTTPRoute.
+	// +optional
+	HTTPRoute *HTTPRouteSpec `json:"httpRoute,omitempty"`
 }
 
 // ServiceSpec configures the Kubernetes Service.
@@ -681,6 +686,47 @@ type IngressTLSSpec struct {
 
 	// SecretName is the name of the TLS secret.
 	SecretName string `json:"secretName"`
+}
+
+// HTTPRouteSpec configures a Gateway API HTTPRoute.
+type HTTPRouteSpec struct {
+	// Enabled controls whether a HTTPRoute is created.
+	// +kubebuilder:default=false
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// ParentRefs specifies the Gateway listeners this route attaches to.
+	// At least one parentRef must be provided when HTTPRoute is enabled.
+	// +optional
+	ParentRefs []HTTPRouteParentRef `json:"parentRefs,omitempty"`
+
+	// Hostnames specifies the hostnames matched by the route.
+	// +optional
+	Hostnames []string `json:"hostnames,omitempty"`
+
+	// PathPrefix configures the path prefix matched by the route.
+	// The managed Service is always used as backend.
+	// +kubebuilder:default="/"
+	// +optional
+	PathPrefix string `json:"pathPrefix,omitempty"`
+
+	// Annotations specifies additional annotations for the HTTPRoute.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// HTTPRouteParentRef identifies the Gateway listener a HTTPRoute attaches to.
+type HTTPRouteParentRef struct {
+	// Name is the referenced Gateway name.
+	Name string `json:"name"`
+
+	// Namespace is the referenced Gateway namespace.
+	// +optional
+	Namespace *string `json:"namespace,omitempty"`
+
+	// SectionName is the referenced listener section name.
+	// +optional
+	SectionName *string `json:"sectionName,omitempty"`
 }
 
 // ObservabilitySpec configures monitoring and logging.
@@ -947,6 +993,8 @@ type ManagedResources struct {
 	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
 	// +optional
 	Ingress string `json:"ingress,omitempty"`
+	// +optional
+	HTTPRoute string `json:"httpRoute,omitempty"`
 	// +optional
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 	// +optional

@@ -41,7 +41,7 @@ The operator reconciles this into a fully managed stack of Kubernetes resources:
 
 | | Feature | Details |
 |---|---|---|
-| **Declarative** | Single CRD | One resource defines the entire stack: StatefulSet, Service, ConfigMap, PVC, ServiceAccount, NetworkPolicy, Ingress, HPA, PDB, and more |
+| **Declarative** | Single CRD | One resource defines the entire stack: StatefulSet, Service, ConfigMap, PVC, ServiceAccount, NetworkPolicy, Ingress, HTTPRoute, HPA, PDB, and more |
 | **Database** | Managed PostgreSQL | Provisions PostgreSQL 17 with auto-generated credentials, data checksums, and graceful shutdown -- or connect to an external database, or use embedded PGlite |
 | **Auth** | Full auth lifecycle | Better Auth with OAuth providers (Google, Apple), email verification via Resend, and automatic admin user bootstrap |
 | **Secure** | Hardened by default | Non-root, all capabilities dropped, seccomp RuntimeDefault, default-deny NetworkPolicy, minimal RBAC |
@@ -223,7 +223,7 @@ spec:
 | Exposure | Description |
 |----------|-------------|
 | `private` (default) | ClusterIP Service only. Access via port-forward or internal DNS. |
-| `public` | Enables Ingress/LoadBalancer. Set `publicURL` for the external-facing URL. |
+| `public` | Enables external access via Ingress, HTTPRoute, or LoadBalancer. Set `publicURL` for the external-facing URL. |
 
 ### Database
 
@@ -601,6 +601,28 @@ spec:
 ```
 
 > **WebSocket support:** Paperclip uses WebSockets for real-time UI updates. Add appropriate timeout annotations for your ingress controller to prevent WebSocket disconnections.
+
+#### HTTPRoute
+
+Gateway API `HTTPRoute` support for modern ingress controllers and gateways:
+
+```yaml
+spec:
+  networking:
+    httpRoute:
+      enabled: true
+      parentRefs:
+        - name: external-https
+          namespace: infra
+          sectionName: https
+      hostnames:
+        - paperclip.example.com
+      pathPrefix: /
+      annotations:
+        example.com/external: "true"
+```
+
+> **Behavior:** `networking.ingress` and `networking.httpRoute` are mutually exclusive. The operator currently creates a single `PathPrefix` route that forwards to the managed Paperclip `Service`.
 
 ### Scaling
 

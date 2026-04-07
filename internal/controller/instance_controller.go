@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 	"github.com/paperclipinc/paperclip-operator/internal/registry"
@@ -91,6 +92,7 @@ type InstanceReconciler struct {
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=ingresses,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=autoscaling,resources=horizontalpodautoscalers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;delete
@@ -237,11 +239,18 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.handleError(ctx, instance, "Service", err)
 	}
 
-	// 6. Ingress (optional)
-	if instance.Spec.Networking.Ingress != nil && instance.Spec.Networking.Ingress.Enabled {
-		if err := r.reconcileIngress(ctx, instance); err != nil {
-			return r.handleError(ctx, instance, "Ingress", err)
-		}
+	ingressEnabled := instance.Spec.Networking.Ingress != nil && instance.Spec.Networking.Ingress.Enabled
+	httpRouteEnabled := instance.Spec.Networking.HTTPRoute != nil && instance.Spec.Networking.HTTPRoute.Enabled
+	if ingressEnabled && httpRouteEnabled {
+		return r.handleError(ctx, instance, "Exposure", fmt.Errorf("ingress and httpRoute cannot both be enabled"))
+	}
+
+	// 6. Exposure resources (optional)
+	if err := r.reconcileIngress(ctx, instance); err != nil {
+		return r.handleError(ctx, instance, "Ingress", err)
+	}
+	if err := r.reconcileHTTPRoute(ctx, instance); err != nil {
+		return r.handleError(ctx, instance, "HTTPRoute", err)
 	}
 
 	// 7. NetworkPolicy (optional)
@@ -729,6 +738,16 @@ func (r *InstanceReconciler) reconcileService(ctx context.Context, instance *pap
 func (r *InstanceReconciler) reconcileIngress(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
 	desired := resources.BuildIngress(instance)
 	if desired == nil {
+		obj := &networkingv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resources.IngressName(instance),
+				Namespace: instance.Namespace,
+			},
+		}
+		if err := r.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("deleting Ingress: %w", err)
+		}
+		instance.Status.ManagedResources.Ingress = ""
 		return nil
 	}
 
@@ -750,6 +769,46 @@ func (r *InstanceReconciler) reconcileIngress(ctx context.Context, instance *pap
 	}
 
 	instance.Status.ManagedResources.Ingress = obj.Name
+	return nil
+}
+
+func (r *InstanceReconciler) reconcileHTTPRoute(ctx context.Context, instance *paperclipv1alpha1.Instance) error {
+	desired := resources.BuildHTTPRoute(instance)
+	if desired == nil {
+		obj := &gatewayv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      resources.HTTPRouteName(instance),
+				Namespace: instance.Namespace,
+			},
+		}
+		if err := r.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("deleting HTTPRoute: %w", err)
+		}
+		instance.Status.ManagedResources.HTTPRoute = ""
+		return nil
+	}
+	if len(desired.Spec.ParentRefs) == 0 {
+		return fmt.Errorf("networking.httpRoute.parentRefs must be specified when httpRoute is enabled")
+	}
+
+	obj := &gatewayv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      desired.Name,
+			Namespace: desired.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, obj, func() error {
+		obj.Labels = desired.Labels
+		obj.Annotations = desired.Annotations
+		obj.Spec = desired.Spec
+		return controllerutil.SetControllerReference(instance, obj, r.Scheme)
+	})
+	if err != nil {
+		return fmt.Errorf("reconciling HTTPRoute: %w", err)
+	}
+
+	instance.Status.ManagedResources.HTTPRoute = obj.Name
 	return nil
 }
 
@@ -1111,6 +1170,7 @@ func (r *InstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.Secret{}).
 		Owns(&networkingv1.Ingress{}).
+		Owns(&gatewayv1.HTTPRoute{}).
 		Owns(&networkingv1.NetworkPolicy{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).

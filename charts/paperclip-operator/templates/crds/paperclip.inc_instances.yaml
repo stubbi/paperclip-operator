@@ -1893,7 +1893,7 @@ spec:
                   exposure:
                     default: private
                     description: 'Exposure controls network exposure: "private" (ClusterIP
-                      only) or "public" (Ingress/LoadBalancer).'
+                      only) or "public" (Ingress/HTTPRoute/LoadBalancer).'
                     enum:
                     - private
                     - public
@@ -5435,6 +5435,54 @@ spec:
                 description: Networking configures service, ingress, and WebSocket
                   settings.
                 properties:
+                  httpRoute:
+                    description: HTTPRoute configures a Gateway API HTTPRoute.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations specifies additional annotations
+                          for the HTTPRoute.
+                        type: object
+                      enabled:
+                        default: false
+                        description: Enabled controls whether a HTTPRoute is created.
+                        type: boolean
+                      hostnames:
+                        description: Hostnames specifies the hostnames matched by
+                          the route.
+                        items:
+                          type: string
+                        type: array
+                      parentRefs:
+                        description: |-
+                          ParentRefs specifies the Gateway listeners this route attaches to.
+                          At least one parentRef must be provided when HTTPRoute is enabled.
+                        items:
+                          description: HTTPRouteParentRef identifies the Gateway listener
+                            a HTTPRoute attaches to.
+                          properties:
+                            name:
+                              description: Name is the referenced Gateway name.
+                              type: string
+                            namespace:
+                              description: Namespace is the referenced Gateway namespace.
+                              type: string
+                            sectionName:
+                              description: SectionName is the referenced listener
+                                section name.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      pathPrefix:
+                        default: /
+                        description: |-
+                          PathPrefix configures the path prefix matched by the route.
+                          The managed Service is always used as backend.
+                        type: string
+                    type: object
                   ingress:
                     description: Ingress configures the Kubernetes Ingress.
                     properties:
@@ -5504,6 +5552,10 @@ spec:
                         type: string
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: ingress and httpRoute cannot both be enabled
+                  rule: '!(has(self.ingress) && self.ingress.enabled && has(self.httpRoute)
+                    && self.httpRoute.enabled)'
               objectStorage:
                 description: ObjectStorage configures S3-compatible object storage
                   for multi-replica deployments.
@@ -7972,6 +8024,8 @@ spec:
                   databaseService:
                     type: string
                   databaseStatefulSet:
+                    type: string
+                  httpRoute:
                     type: string
                   ingress:
                     type: string

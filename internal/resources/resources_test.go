@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 )
@@ -354,6 +355,85 @@ func TestBuildIngressNil(t *testing.T) {
 	ing := BuildIngress(instance)
 	if ing != nil {
 		t.Error("expected nil Ingress when spec is nil")
+	}
+}
+
+func TestBuildHTTPRoute(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Networking.HTTPRoute = &paperclipv1alpha1.HTTPRouteSpec{
+		Enabled: true,
+		ParentRefs: []paperclipv1alpha1.HTTPRouteParentRef{
+			{
+				Name:        "external-https",
+				Namespace:   Ptr("infra"),
+				SectionName: Ptr("https"),
+			},
+		},
+		Hostnames:  []string{"paperclip.example.com"},
+		PathPrefix: "/paperclip",
+		Annotations: map[string]string{
+			"example.com/external": "true",
+		},
+	}
+
+	route := BuildHTTPRoute(instance)
+	if route == nil {
+		t.Fatal("expected non-nil HTTPRoute")
+	}
+
+	if route.Name != "my-paperclip" {
+		t.Fatalf("expected name 'my-paperclip', got %q", route.Name)
+	}
+	if len(route.Spec.ParentRefs) != 1 {
+		t.Fatalf("expected 1 parentRef, got %d", len(route.Spec.ParentRefs))
+	}
+	if route.Spec.ParentRefs[0].Name != gatewayv1.ObjectName("external-https") {
+		t.Fatalf("expected parentRef name 'external-https', got %q", route.Spec.ParentRefs[0].Name)
+	}
+	if route.Spec.ParentRefs[0].Namespace == nil || *route.Spec.ParentRefs[0].Namespace != gatewayv1.Namespace("infra") {
+		t.Fatalf("expected parentRef namespace 'infra', got %v", route.Spec.ParentRefs[0].Namespace)
+	}
+	if route.Spec.ParentRefs[0].SectionName == nil || *route.Spec.ParentRefs[0].SectionName != gatewayv1.SectionName("https") {
+		t.Fatalf("expected sectionName 'https', got %v", route.Spec.ParentRefs[0].SectionName)
+	}
+	if len(route.Spec.Hostnames) != 1 || route.Spec.Hostnames[0] != gatewayv1.Hostname("paperclip.example.com") {
+		t.Fatalf("expected hostname 'paperclip.example.com', got %v", route.Spec.Hostnames)
+	}
+	if len(route.Spec.Rules) != 1 || len(route.Spec.Rules[0].Matches) != 1 {
+		t.Fatalf("expected a single route rule with a single match, got %+v", route.Spec.Rules)
+	}
+	match := route.Spec.Rules[0].Matches[0]
+	if match.Path == nil || match.Path.Type == nil || *match.Path.Type != gatewayv1.PathMatchPathPrefix {
+		t.Fatalf("expected PathPrefix match, got %+v", match.Path)
+	}
+	if match.Path.Value == nil || *match.Path.Value != "/paperclip" {
+		t.Fatalf("expected path prefix '/paperclip', got %+v", match.Path.Value)
+	}
+	if len(route.Spec.Rules[0].BackendRefs) != 1 {
+		t.Fatalf("expected 1 backendRef, got %d", len(route.Spec.Rules[0].BackendRefs))
+	}
+	backend := route.Spec.Rules[0].BackendRefs[0]
+	if backend.Name != gatewayv1.ObjectName("my-paperclip") {
+		t.Fatalf("expected backend service 'my-paperclip', got %q", backend.Name)
+	}
+	if backend.Port == nil || *backend.Port != gatewayv1.PortNumber(3100) {
+		t.Fatalf("expected backend port 3100, got %v", backend.Port)
+	}
+	if route.Annotations["example.com/external"] != "true" {
+		t.Fatal("expected HTTPRoute annotations to be preserved")
+	}
+}
+
+func TestBuildHTTPRouteNil(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Networking.HTTPRoute = nil
+	if route := BuildHTTPRoute(instance); route != nil {
+		t.Error("expected nil HTTPRoute when spec is nil")
+	}
+
+	instance.Spec.Networking.HTTPRoute = &paperclipv1alpha1.HTTPRouteSpec{Enabled: false}
+	if route := BuildHTTPRoute(instance); route != nil {
+		t.Error("expected nil HTTPRoute when disabled")
 	}
 }
 
@@ -1364,6 +1444,7 @@ func TestNamingConventions(t *testing.T) {
 		{"ConfigMapName", ConfigMapName, "my-paperclip-config"},
 		{"PVCName", PVCName, "my-paperclip-data"},
 		{"IngressName", IngressName, "my-paperclip"},
+		{"HTTPRouteName", HTTPRouteName, "my-paperclip"},
 		{"ServiceAccountName", ServiceAccountName, "my-paperclip"},
 		{"NetworkPolicyName", NetworkPolicyName, "my-paperclip"},
 		{"DatabaseStatefulSetName", DatabaseStatefulSetName, "my-paperclip-db"},

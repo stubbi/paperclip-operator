@@ -1,0 +1,63 @@
+apiVersion: paperclip.inc/v1alpha1
+kind: Instance
+metadata:
+  name: paperclip-sample-httproute
+spec:
+  image:
+    repository: ghcr.io/paperclipinc/paperclip
+    tag: latest
+
+  deployment:
+    mode: authenticated
+    exposure: public
+    publicURL: https://paperclip.example.com
+
+  database:
+    mode: external
+    host: postgres.example.com
+    port: 5432
+    name: paperclip
+    user: paperclip
+    passwordSecretRef:
+      name: paperclip-db-password
+      key: password
+    sslMode: require
+
+  auth:
+    secretRef:
+      name: paperclip-secrets
+      key: auth-secret
+
+  secrets:
+    provider: kubernetes
+    secretName: paperclip-secrets-master-key
+    secretKey: master-key
+
+  storage:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: gp3
+
+  networking:
+    service:
+      type: ClusterIP
+      port: 3100
+    httpRoute:
+      enabled: true
+      parentRefs:
+        - name: external-https
+          namespace: infra
+          sectionName: https
+      hostnames:
+        - paperclip.example.com
+      pathPrefix: /
+
+  observability:
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        interval: 30s
+    logging:
+      level: info
