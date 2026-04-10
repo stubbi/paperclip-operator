@@ -127,7 +127,7 @@ func mustAddToScheme(t *testing.T, scheme *runtime.Scheme) {
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to add client-go scheme: %v", err)
 	}
-	if err := gatewayv1.AddToScheme(scheme); err != nil {
+	if err := gatewayv1.Install(scheme); err != nil {
 		t.Fatalf("failed to add gateway-api scheme: %v", err)
 	}
 	if err := paperclipv1alpha1.AddToScheme(scheme); err != nil {

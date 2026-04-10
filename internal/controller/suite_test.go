@@ -60,7 +60,7 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	var err error
-	err = gatewayv1.AddToScheme(scheme.Scheme)
+	err = gatewayv1.Install(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = paperclipv1alpha1.AddToScheme(scheme.Scheme)
