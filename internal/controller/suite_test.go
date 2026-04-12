@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	gatewayapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
@@ -60,6 +61,8 @@ var _ = BeforeSuite(func() {
 
 	var err error
 	err = paperclipv1alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = gatewayapiv1.Install(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

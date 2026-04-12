@@ -628,6 +628,11 @@ type NetworkingSpec struct {
 	// Ingress configures the Kubernetes Ingress.
 	// +optional
 	Ingress *IngressSpec `json:"ingress,omitempty"`
+
+	// HTTPRoute configures a Gateway API HTTPRoute.
+	// This is an alternative to Ingress for clusters using the Gateway API.
+	// +optional
+	HTTPRoute *HTTPRouteSpec `json:"httpRoute,omitempty"`
 }
 
 // ServiceSpec configures the Kubernetes Service.
@@ -681,6 +686,42 @@ type IngressTLSSpec struct {
 
 	// SecretName is the name of the TLS secret.
 	SecretName string `json:"secretName"`
+}
+
+// HTTPRouteSpec configures a Gateway API HTTPRoute.
+type HTTPRouteSpec struct {
+	// Enabled controls whether an HTTPRoute is created.
+	// +kubebuilder:default=false
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// ParentRefs specifies the Gateways this HTTPRoute attaches to.
+	// Each ref identifies a Gateway by name (and optionally namespace and sectionName).
+	// +optional
+	ParentRefs []HTTPRouteParentRef `json:"parentRefs,omitempty"`
+
+	// Hostnames specifies the hostnames matched by this HTTPRoute.
+	// +optional
+	Hostnames []string `json:"hostnames,omitempty"`
+
+	// Annotations specifies additional annotations for the HTTPRoute.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// HTTPRouteParentRef identifies a Gateway (or other parent) that the HTTPRoute attaches to.
+type HTTPRouteParentRef struct {
+	// Name is the name of the Gateway.
+	Name string `json:"name"`
+
+	// Namespace is the namespace of the Gateway.
+	// Defaults to the same namespace as the HTTPRoute.
+	// +optional
+	Namespace *string `json:"namespace,omitempty"`
+
+	// SectionName is the name of a specific listener on the Gateway to attach to.
+	// +optional
+	SectionName *string `json:"sectionName,omitempty"`
 }
 
 // ObservabilitySpec configures monitoring and logging.
@@ -947,6 +988,8 @@ type ManagedResources struct {
 	PersistentVolumeClaim string `json:"persistentVolumeClaim,omitempty"`
 	// +optional
 	Ingress string `json:"ingress,omitempty"`
+	// +optional
+	HTTPRoute string `json:"httpRoute,omitempty"`
 	// +optional
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 	// +optional
