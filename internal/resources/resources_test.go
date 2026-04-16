@@ -357,6 +357,102 @@ func TestBuildIngressNil(t *testing.T) {
 	}
 }
 
+func TestBuildHTTPRoute(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Networking.HTTPRoute = &paperclipv1alpha1.HTTPRouteSpec{
+		Enabled: true,
+		ParentRefs: []paperclipv1alpha1.HTTPRouteParentRef{
+			{
+				Name:        "my-gateway",
+				SectionName: Ptr("https"),
+			},
+		},
+		Hostnames: []string{"paperclip.example.com"},
+		Annotations: map[string]string{
+			"example.com/custom": "value",
+		},
+	}
+
+	route := BuildHTTPRoute(instance)
+	if route == nil {
+		t.Fatal("expected non-nil HTTPRoute")
+	}
+
+	if route.Name != "my-paperclip" {
+		t.Errorf("expected name 'my-paperclip', got %q", route.Name)
+	}
+
+	if len(route.Spec.ParentRefs) != 1 {
+		t.Fatalf("expected 1 parentRef, got %d", len(route.Spec.ParentRefs))
+	}
+	if string(route.Spec.ParentRefs[0].Name) != "my-gateway" {
+		t.Errorf("expected parentRef name 'my-gateway', got %q", route.Spec.ParentRefs[0].Name)
+	}
+	if route.Spec.ParentRefs[0].SectionName == nil || string(*route.Spec.ParentRefs[0].SectionName) != "https" {
+		t.Error("expected parentRef sectionName 'https'")
+	}
+
+	if len(route.Spec.Hostnames) != 1 {
+		t.Fatalf("expected 1 hostname, got %d", len(route.Spec.Hostnames))
+	}
+	if string(route.Spec.Hostnames[0]) != "paperclip.example.com" {
+		t.Errorf("expected hostname 'paperclip.example.com', got %q", route.Spec.Hostnames[0])
+	}
+
+	if len(route.Spec.Rules) != 1 {
+		t.Fatalf("expected 1 rule, got %d", len(route.Spec.Rules))
+	}
+	rule := route.Spec.Rules[0]
+	if len(rule.BackendRefs) != 1 {
+		t.Fatalf("expected 1 backendRef, got %d", len(rule.BackendRefs))
+	}
+	if string(rule.BackendRefs[0].Name) != "my-paperclip" {
+		t.Errorf("expected backendRef name 'my-paperclip', got %q", rule.BackendRefs[0].Name)
+	}
+	if rule.BackendRefs[0].Port == nil || int32(*rule.BackendRefs[0].Port) != 3100 {
+		t.Error("expected backendRef port 3100")
+	}
+
+	if route.Annotations["example.com/custom"] != "value" {
+		t.Error("expected custom annotation")
+	}
+}
+
+func TestBuildHTTPRouteNil(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Networking.HTTPRoute = nil
+	route := BuildHTTPRoute(instance)
+	if route != nil {
+		t.Error("expected nil HTTPRoute when spec is nil")
+	}
+}
+
+func TestBuildHTTPRouteWithNamespace(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Networking.HTTPRoute = &paperclipv1alpha1.HTTPRouteSpec{
+		Enabled: true,
+		ParentRefs: []paperclipv1alpha1.HTTPRouteParentRef{
+			{
+				Name:      "shared-gateway",
+				Namespace: Ptr("gateway-system"),
+			},
+		},
+		Hostnames: []string{"app.example.com"},
+	}
+
+	route := BuildHTTPRoute(instance)
+	if route == nil {
+		t.Fatal("expected non-nil HTTPRoute")
+	}
+
+	if route.Spec.ParentRefs[0].Namespace == nil {
+		t.Fatal("expected parentRef namespace to be set")
+	}
+	if string(*route.Spec.ParentRefs[0].Namespace) != "gateway-system" {
+		t.Errorf("expected namespace 'gateway-system', got %q", *route.Spec.ParentRefs[0].Namespace)
+	}
+}
+
 func TestBuildServiceAccount(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	instance.Spec.Security.RBAC.ServiceAccountAnnotations = map[string]string{
