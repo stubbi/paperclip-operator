@@ -1483,3 +1483,101 @@ func TestNamingConventions(t *testing.T) {
 		})
 	}
 }
+
+func TestContainerSecurityContextOverrideAppliesToAllPaperclipContainers(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	instance.Spec.Security.ContainerSecurityContext = &corev1.SecurityContext{
+		AllowPrivilegeEscalation: Ptr(false),
+		RunAsNonRoot:             Ptr(false),
+		RunAsUser:                Ptr(int64(0)),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+			Add:  []corev1.Capability{"SETUID", "SETGID"},
+		},
+	}
+
+	// Main container
+	sts := BuildStatefulSet(instance, nil)
+	mainContainer := sts.Spec.Template.Spec.Containers[0]
+	if *mainContainer.SecurityContext.RunAsNonRoot != false {
+		t.Error("main container: expected RunAsNonRoot=false from CRD override")
+	}
+	if *mainContainer.SecurityContext.RunAsUser != 0 {
+		t.Error("main container: expected RunAsUser=0 from CRD override")
+	}
+
+	// Onboard init container - should also use the CRD override
+	var onboard *corev1.Container
+	for i := range sts.Spec.Template.Spec.InitContainers {
+		if sts.Spec.Template.Spec.InitContainers[i].Name == "onboard" {
+			onboard = &sts.Spec.Template.Spec.InitContainers[i]
+			break
+		}
+	}
+	if onboard == nil {
+		t.Fatal("expected onboard init container")
+	}
+	if *onboard.SecurityContext.RunAsNonRoot != false {
+		t.Error("onboard: expected RunAsNonRoot=false from CRD override")
+	}
+
+	// Bootstrap job
+	instance.Spec.Auth.AdminUser = &paperclipv1alpha1.AdminUserSpec{
+		Email: "admin@test.com",
+		PasswordSecretRef: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "admin-secret"},
+			Key:                  "password",
+		},
+	}
+	job := BuildBootstrapJob(instance)
+	bootstrapContainer := job.Spec.Template.Spec.Containers[0]
+	if *bootstrapContainer.SecurityContext.RunAsNonRoot != false {
+		t.Error("bootstrap: expected RunAsNonRoot=false from CRD override")
+	}
+}
+
+func TestDefaultSecurityContextOnOnboardAndBootstrap(t *testing.T) {
+	instance := newTestInstance("my-paperclip")
+	// No CRD override - should get restricted PSS defaults
+
+	sts := BuildStatefulSet(instance, nil)
+	var onboard *corev1.Container
+	for i := range sts.Spec.Template.Spec.InitContainers {
+		if sts.Spec.Template.Spec.InitContainers[i].Name == "onboard" {
+			onboard = &sts.Spec.Template.Spec.InitContainers[i]
+			break
+		}
+	}
+	if onboard == nil {
+		t.Fatal("expected onboard init container")
+	}
+	sc := onboard.SecurityContext
+	if *sc.RunAsNonRoot != true {
+		t.Error("onboard: expected default RunAsNonRoot=true")
+	}
+	if *sc.AllowPrivilegeEscalation != false {
+		t.Error("onboard: expected default AllowPrivilegeEscalation=false")
+	}
+	if sc.Capabilities == nil || sc.Capabilities.Drop[0] != "ALL" {
+		t.Error("onboard: expected default drop ALL capabilities")
+	}
+
+	instance.Spec.Auth.AdminUser = &paperclipv1alpha1.AdminUserSpec{
+		Email: "admin@test.com",
+		PasswordSecretRef: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "admin-secret"},
+			Key:                  "password",
+		},
+	}
+	job := BuildBootstrapJob(instance)
+	bsc := job.Spec.Template.Spec.Containers[0].SecurityContext
+	if *bsc.RunAsNonRoot != true {
+		t.Error("bootstrap: expected default RunAsNonRoot=true")
+	}
+	if *bsc.AllowPrivilegeEscalation != false {
+		t.Error("bootstrap: expected default AllowPrivilegeEscalation=false")
+	}
+}
