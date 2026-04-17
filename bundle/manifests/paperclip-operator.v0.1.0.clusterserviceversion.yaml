@@ -14,7 +14,8 @@ metadata:
           },
           "spec": {
             "image": {
-              "tag": "latest"
+              "repository": "ghcr.io/paperclipinc/paperclip",
+              "tag": "2026.0403"
             },
             "deployment": {
               "mode": "authenticated"
@@ -31,11 +32,11 @@ metadata:
           }
         }
       ]
-    capabilities: Full Lifecycle
+    capabilities: Auto Pilot
     categories: AI/Machine Learning
     containerImage: ghcr.io/paperclipinc/paperclip-operator:v0.1.0
     createdAt: "2026-03-19T00:00:00Z"
-    description: Kubernetes operator for managing Paperclip instances - the open-source AI agent orchestration platform.
+    description: Production-grade Kubernetes operator for Paperclip, the open-source AI agent orchestration platform for zero-human companies.
     operators.operatorframework.io/builder: operator-sdk-v1.42.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/paperclipinc/paperclip-operator
@@ -50,29 +51,16 @@ spec:
         name: instances.paperclip.inc
         version: v1alpha1
   description: |
-    ## Paperclip Kubernetes Operator
+    ## Paperclip Operator
 
-    The Paperclip Operator automates the deployment and lifecycle management
-    of [Paperclip](https://github.com/paperclipai/paperclip) instances on
-    Kubernetes. Paperclip is the open-source AI agent orchestration platform
-    for zero-human companies.
+    The Paperclip Operator automates day 1 and day 2 lifecycle management
+    for [Paperclip](https://paperclip.inc), the open-source AI agent
+    orchestration platform for zero-human companies. Declare a single
+    `Instance` custom resource and the operator provisions the full stack:
+    PostgreSQL, Redis, persistent storage, ingress, network policies,
+    autoscaling, and periodic backups.
 
-    ### Features
-
-    * **Managed PostgreSQL** - Operator provisions and manages PostgreSQL 17
-    * **External Database** - Connect to existing PostgreSQL
-    * **Persistent Storage** - PVC for the Paperclip data directory
-    * **S3 Object Storage** - S3/MinIO/R2 for multi-replica deployments
-    * **Ingress + WebSocket** - Full Ingress support with WebSocket
-    * **Network Policies** - Deny-all baseline with selective allow rules
-    * **Auto-scaling** - HPA with CPU/memory targets
-    * **Health Probes** - Against Paperclip's /api/health endpoint
-    * **LLM API Keys** - Inject Anthropic, OpenAI keys from Secrets
-    * **Secrets Management** - Encrypted secrets with master key support
-
-    ### Getting Started
-
-    Create a Instance custom resource to deploy Paperclip:
+    ### Quick start
 
     ```yaml
     apiVersion: paperclip.inc/v1alpha1
@@ -81,7 +69,10 @@ spec:
       name: my-paperclip
     spec:
       image:
-        tag: latest
+        repository: ghcr.io/paperclipinc/paperclip
+        # Pick a specific upstream release tag. The operator requires an
+        # explicit tag or digest and will not fall back to :latest.
+        tag: "2026.0403"
       deployment:
         mode: authenticated
       database:
@@ -91,9 +82,72 @@ spec:
           enabled: true
           size: 5Gi
     ```
+
+    Apply the custom resource and the operator reconciles the workload
+    into a healthy, production-ready state. Every managed resource
+    (StatefulSet, Service, ConfigMap, Secret, NetworkPolicy, Ingress,
+    HPA, PDB) is owned by the `Instance` and garbage-collected on delete.
+
+    ### Capabilities
+
+    **Deploy**
+
+    * Managed PostgreSQL 17, provisioned and reconciled by the operator.
+    * External PostgreSQL (connection string) and embedded (PGlite) modes.
+    * Redis (managed or external) for rate limiting and cross-replica state.
+    * Persistent storage with configurable storage class and size.
+    * S3-compatible object storage (AWS S3, MinIO, R2) for multi-replica setups.
+
+    **Expose**
+
+    * ClusterIP service by default, Ingress for public deployments.
+    * First-class WebSocket support for the Paperclip UI.
+    * Configurable Ingress class, hosts, TLS, and annotations.
+
+    **Secure**
+
+    * NetworkPolicy with a deny-all baseline and selective allow rules.
+    * Restricted Pod Security Standard: runAsNonRoot, drop ALL capabilities,
+      seccomp RuntimeDefault, read-only root filesystem.
+    * Encrypted secrets via a master key. API keys and OAuth credentials
+      are injected from existing Kubernetes Secrets, never stored in the CR.
+
+    **Observe**
+
+    * Liveness, readiness, and startup probes against `/api/health`.
+    * Prometheus metrics with an optional ServiceMonitor.
+    * OpenTelemetry collector egress pre-allowed when enabled.
+    * Status conditions and events for every reconcile.
+
+    **Operate**
+
+    * Horizontal pod autoscaling with CPU and memory targets.
+    * Pod disruption budgets and configurable node selectors, tolerations,
+      and affinity rules.
+    * Periodic backups to S3-compatible storage, with restore-from-backup
+      on first boot for disaster recovery.
+    * Registry-polled auto-update: the operator resolves new digests for
+      a pinned tag and rolls the workload safely, without human intervention.
+    * Automatic leader-election of the heartbeat scheduler so exactly one
+      replica runs it in multi-replica deployments.
+
+    ### Upgrades
+
+    The operator supports seamless upgrades across minor versions. CRDs
+    are shipped as Helm templates or via OLM, so each release applies
+    schema changes cleanly. Existing `Instance` resources continue to
+    reconcile under the new operator version with no manual steps.
+
+    ### Support and links
+
+    * Website: [paperclip.inc](https://paperclip.inc)
+    * App repository: [github.com/paperclipinc/paperclip](https://github.com/paperclipinc/paperclip)
+    * Operator repository: [github.com/paperclipinc/paperclip-operator](https://github.com/paperclipinc/paperclip-operator)
+    * Report an issue: [github.com/paperclipinc/paperclip-operator/issues](https://github.com/paperclipinc/paperclip-operator/issues)
+    * Contact: contact@paperclip.inc
   displayName: Paperclip Operator
   icon:
-    - base64data: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiMxYTFhMmUiLz4KICA8cGF0aCBkPSJNMjAgMTZoNGEyIDIgMCAwIDEgMiAydjhhNiA2IDAgMCAwIDEyIDB2LThhMiAyIDAgMCAxIDItMmg0YTIgMiAwIDAgMSAyIDJ2OGMwIDExLjA0Ni04Ljk1NCAyMC0yMCAyMFM2IDM3LjA0NiA2IDI2di04YTIgMiAwIDAgMSAyLTJoNGEyIDIgMCAwIDEgMiAydjhhMTIgMTIgMCAwIDAgMjQgMHYtOGEyIDIgMCAwIDEgMi0yeiIgZmlsbD0iI2U5NDU2MCIvPgogIDxjaXJjbGUgY3g9IjI2IiBjeT0iMjAiIHI9IjMiIGZpbGw9IiMwZjM0NjAiLz4KICA8Y2lyY2xlIGN4PSIzOCIgY3k9IjIwIiByPSIzIiBmaWxsPSIjMGYzNDYwIi8+Cjwvc3ZnPgo="
+    - base64data: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgNDAwIiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCI+CiAgPHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmZmYiLz4KICA8cGF0aAogICAgZD0iTSAyNTAsOTEKICAgICAgIEwgMjUwLDIzNy41CiAgICAgICBBIDQ3LjUsNDcuNSAwIDAsMSAxNTUsMjM3LjUKICAgICAgIEwgMTU1LDcyCiAgICAgICBBIDYxLjc1LDYxLjc1IDAgMCwxIDI3OC41LDcyCiAgICAgICBMIDI3OC41LDI5NC41CiAgICAgICBBIDc2LDc2IDAgMCwxIDEyNi41LDI5NC41CiAgICAgICBMIDEyNi41LDkxIgogICAgZmlsbD0ibm9uZSIKICAgIHN0cm9rZT0iIzAwMCIKICAgIHN0cm9rZS13aWR0aD0iMTEuNCIKICAgIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIKICAvPgo8L3N2Zz4K"
       mediatype: image/svg+xml
   install:
     spec:
@@ -264,13 +318,17 @@ spec:
     - orchestration
     - kubernetes
   links:
-    - name: GitHub
+    - name: Paperclip Homepage
+      url: https://paperclip.inc
+    - name: Paperclip App
+      url: https://github.com/paperclipinc/paperclip
+    - name: Paperclip Operator
       url: https://github.com/paperclipinc/paperclip-operator
-    - name: Paperclip
-      url: https://github.com/paperclipai/paperclip
+    - name: Report an Issue
+      url: https://github.com/paperclipinc/paperclip-operator/issues
   maintainers:
-    - email: jannes@paperclip.inc
-      name: Jannes Stubbemann
+    - email: contact@paperclip.inc
+      name: Paperclip Team
   maturity: alpha
   minKubeVersion: 1.28.0
   provider:
