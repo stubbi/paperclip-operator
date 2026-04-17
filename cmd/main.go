@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	gatewayapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 	"github.com/paperclipinc/paperclip-operator/internal/controller"
@@ -52,6 +53,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(paperclipv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(gatewayapiv1.Install(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

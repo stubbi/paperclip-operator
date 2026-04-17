@@ -165,20 +165,10 @@ func buildMainContainer(instance *paperclipv1alpha1.Instance) corev1.Container {
 	}
 
 	// Container security context
-	if instance.Spec.Security.ContainerSecurityContext != nil {
-		container.SecurityContext = instance.Spec.Security.ContainerSecurityContext
-	} else {
-		container.SecurityContext = &corev1.SecurityContext{
-			AllowPrivilegeEscalation: Ptr(false),
-			ReadOnlyRootFilesystem:   Ptr(false), // Paperclip needs writable filesystem for node_modules, etc.
-			RunAsNonRoot:             Ptr(true),
-			SeccompProfile: &corev1.SeccompProfile{
-				Type: corev1.SeccompProfileTypeRuntimeDefault,
-			},
-			Capabilities: &corev1.Capabilities{
-				Drop: []corev1.Capability{"ALL"},
-			},
-		}
+	container.SecurityContext = paperclipContainerSecurityContext(instance)
+	if container.SecurityContext.ReadOnlyRootFilesystem == nil {
+		container.SecurityContext = container.SecurityContext.DeepCopy()
+		container.SecurityContext.ReadOnlyRootFilesystem = Ptr(false) // Paperclip needs writable filesystem for node_modules, etc.
 	}
 
 	// Multi-replica heartbeat gating: only pod-0 runs the scheduler.
@@ -845,16 +835,7 @@ exit 1
 		Env:             buildEnvVars(instance),
 		EnvFrom:         instance.Spec.EnvFrom,
 		VolumeMounts:    buildVolumeMounts(instance),
-		SecurityContext: &corev1.SecurityContext{
-			AllowPrivilegeEscalation: Ptr(false),
-			RunAsNonRoot:             Ptr(true),
-			SeccompProfile: &corev1.SeccompProfile{
-				Type: corev1.SeccompProfileTypeRuntimeDefault,
-			},
-			Capabilities: &corev1.Capabilities{
-				Drop: []corev1.Capability{"ALL"},
-			},
-		},
+		SecurityContext: paperclipContainerSecurityContext(instance),
 	}
 }
 
