@@ -188,16 +188,7 @@ echo "Admin bootstrap finished successfully."
 							ImagePullPolicy: imagePullPolicy(instance),
 							Command:         []string{"/bin/sh", "-c"},
 							Args:            []string{script},
-							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: Ptr(false),
-								RunAsNonRoot:             Ptr(true),
-								SeccompProfile: &corev1.SeccompProfile{
-									Type: corev1.SeccompProfileTypeRuntimeDefault,
-								},
-								Capabilities: &corev1.Capabilities{
-									Drop: []corev1.Capability{"ALL"},
-								},
-							},
+							SecurityContext: paperclipContainerSecurityContext(instance),
 							Env: append(buildEnvVars(instance),
 								corev1.EnvVar{
 									Name:  "ADMIN_EMAIL",

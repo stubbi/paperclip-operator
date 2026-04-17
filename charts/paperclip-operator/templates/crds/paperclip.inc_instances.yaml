@@ -5435,6 +5435,52 @@ spec:
                 description: Networking configures service, ingress, and WebSocket
                   settings.
                 properties:
+                  httpRoute:
+                    description: |-
+                      HTTPRoute configures a Gateway API HTTPRoute.
+                      This is an alternative to Ingress for clusters using the Gateway API.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: Annotations specifies additional annotations
+                          for the HTTPRoute.
+                        type: object
+                      enabled:
+                        default: false
+                        description: Enabled controls whether an HTTPRoute is created.
+                        type: boolean
+                      hostnames:
+                        description: Hostnames specifies the hostnames matched by
+                          this HTTPRoute.
+                        items:
+                          type: string
+                        type: array
+                      parentRefs:
+                        description: |-
+                          ParentRefs specifies the Gateways this HTTPRoute attaches to.
+                          Each ref identifies a Gateway by name (and optionally namespace and sectionName).
+                        items:
+                          description: HTTPRouteParentRef identifies a Gateway (or
+                            other parent) that the HTTPRoute attaches to.
+                          properties:
+                            name:
+                              description: Name is the name of the Gateway.
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace is the namespace of the Gateway.
+                                Defaults to the same namespace as the HTTPRoute.
+                              type: string
+                            sectionName:
+                              description: SectionName is the name of a specific listener
+                                on the Gateway to attach to.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                    type: object
                   ingress:
                     description: Ingress configures the Kubernetes Ingress.
                     properties:
@@ -7972,6 +8018,8 @@ spec:
                   databaseService:
                     type: string
                   databaseStatefulSet:
+                    type: string
+                  httpRoute:
                     type: string
                   ingress:
                     type: string
