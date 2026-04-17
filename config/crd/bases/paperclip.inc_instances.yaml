@@ -3992,10 +3992,17 @@ spec:
                     description: Repository is the container image repository.
                     type: string
                   tag:
-                    default: latest
-                    description: Tag is the container image tag.
+                    description: |-
+                      Tag is the container image tag. Either tag or digest must be set; there is
+                      no default, because pinning to a mutable tag like :latest can silently pull
+                      a broken upstream build.
                     type: string
                 type: object
+                x-kubernetes-validations:
+                - message: 'spec.image: one of tag or digest must be set (pinning
+                    to :latest is not supported, pick a specific upstream release
+                    tag)'
+                  rule: size(self.tag) > 0 || size(self.digest) > 0
               initContainers:
                 description: InitContainers specifies additional init containers.
                 items:

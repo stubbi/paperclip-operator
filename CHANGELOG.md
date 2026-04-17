@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.11.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.10.0...v0.11.0) (2026-04-17)
+
+
+### Features
+
+* add Gateway API HTTPRoute support ([#51](https://github.com/paperclipinc/paperclip-operator/issues/51)) ([2fc8ff6](https://github.com/paperclipinc/paperclip-operator/commit/2fc8ff6dfbf058eab2ff688938a47d48179690c3)), closes [#48](https://github.com/paperclipinc/paperclip-operator/issues/48)
+
+
+### Bug Fixes
+
+* add NODE_OPTIONS to preload OTEL instrumentation ([#39](https://github.com/paperclipinc/paperclip-operator/issues/39)) ([9c16a85](https://github.com/paperclipinc/paperclip-operator/commit/9c16a8537cf422f794979072778e899fb11d8fb2))
+* add NODE_OPTIONS to preload OTEL instrumentation before app start ([9c16a85](https://github.com/paperclipinc/paperclip-operator/commit/9c16a8537cf422f794979072778e899fb11d8fb2))
+* add SELinux relabel init container for persistent volumes ([#41](https://github.com/paperclipinc/paperclip-operator/issues/41)) ([93df250](https://github.com/paperclipinc/paperclip-operator/commit/93df250d6a4089febfdd037313f7117f2de5d6a6))
+* allow OTEL collector egress in NetworkPolicy ([#40](https://github.com/paperclipinc/paperclip-operator/issues/40)) ([dc26f4f](https://github.com/paperclipinc/paperclip-operator/commit/dc26f4fb941bedd4db0c4067d3ec0f8c64aa117a))
+* allow OTEL collector egress in NetworkPolicy (ports 4317/4318) ([dc26f4f](https://github.com/paperclipinc/paperclip-operator/commit/dc26f4fb941bedd4db0c4067d3ec0f8c64aa117a))
+* allow Redis egress in NetworkPolicy for external mode ([#44](https://github.com/paperclipinc/paperclip-operator/issues/44)) ([94fc4a0](https://github.com/paperclipinc/paperclip-operator/commit/94fc4a0ad72b4b6ec333b78ec0bcedf0d1f85f82))
+* apply CRD security context override to all Paperclip containers ([#46](https://github.com/paperclipinc/paperclip-operator/issues/46)) ([7e5b87a](https://github.com/paperclipinc/paperclip-operator/commit/7e5b87a20c0697cc3dc84585e1721f00f98aff50))
+* apply CRD security context override to onboard and bootstrap containers ([7e5b87a](https://github.com/paperclipinc/paperclip-operator/commit/7e5b87a20c0697cc3dc84585e1721f00f98aff50)), closes [#45](https://github.com/paperclipinc/paperclip-operator/issues/45)
+* require explicit image tag or digest instead of defaulting to :latest ([#54](https://github.com/paperclipinc/paperclip-operator/issues/54)) ([90a945e](https://github.com/paperclipinc/paperclip-operator/commit/90a945e6cc49ea1fb90cfd88f3a35b934aa19c41)), closes [#52](https://github.com/paperclipinc/paperclip-operator/issues/52)
+* set runAsNonRoot=false on SELinux relabel init container ([#42](https://github.com/paperclipinc/paperclip-operator/issues/42)) ([d6aac33](https://github.com/paperclipinc/paperclip-operator/commit/d6aac338a51981885912eb74369ec7e10bbf987c))
+
 ## [0.10.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.9.1...v0.10.0) (2026-04-06)
 
 
