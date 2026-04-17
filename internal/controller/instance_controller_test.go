@@ -51,7 +51,11 @@ var _ = Describe("Instance Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: paperclipv1alpha1.InstanceSpec{
+						Image: paperclipv1alpha1.ImageSpec{
+							Tag: "v1.0.0",
+						},
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

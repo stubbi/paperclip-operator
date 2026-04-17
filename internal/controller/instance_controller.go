@@ -1069,7 +1069,9 @@ func (r *InstanceReconciler) reconcileAutoUpdate(ctx context.Context, instance *
 	}
 	tag := instance.Spec.Image.Tag
 	if tag == "" {
-		tag = "latest"
+		instance.Status.AutoUpdate.LastError = "auto-update requires spec.image.tag to be set; cannot poll a digest-pinned image"
+		instance.Status.AutoUpdate.LastCheckTime = &now
+		return ctrl.Result{RequeueAfter: interval}
 	}
 
 	digest, err := r.RegistryClient.ResolveDigest(ctx, repo, tag, dockerConfigJSON)
