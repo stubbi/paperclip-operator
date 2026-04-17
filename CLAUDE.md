@@ -5,7 +5,7 @@
 Go-based Kubernetes operator for managing Paperclip instances (the open-source AI agent orchestration platform), built with controller-runtime (kubebuilder). CRD API group is `paperclip.ai`, version `v1alpha1`.
 
 - **Module:** `github.com/paperclipinc/paperclip-operator`
-- **Go version:** 1.24
+- **Go version:** 1.25
 - **GitHub:** `paperclipinc/paperclip-operator` (GHCR org: `paperclipinc`)
 
 ## Commands
