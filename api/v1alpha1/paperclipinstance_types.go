@@ -135,14 +135,16 @@ type InstanceSpec struct {
 }
 
 // ImageSpec configures the container image.
+// +kubebuilder:validation:XValidation:rule="size(self.tag) > 0 || size(self.digest) > 0",message="spec.image: one of tag or digest must be set (pinning to :latest is not supported, pick a specific upstream release tag)"
 type ImageSpec struct {
 	// Repository is the container image repository.
 	// +kubebuilder:default="ghcr.io/paperclipinc/paperclip"
 	// +optional
 	Repository string `json:"repository,omitempty"`
 
-	// Tag is the container image tag.
-	// +kubebuilder:default="latest"
+	// Tag is the container image tag. Either tag or digest must be set; there is
+	// no default, because pinning to a mutable tag like :latest can silently pull
+	// a broken upstream build.
 	// +optional
 	Tag string `json:"tag,omitempty"`
 

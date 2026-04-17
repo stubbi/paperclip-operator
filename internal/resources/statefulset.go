@@ -849,11 +849,7 @@ func containerImage(instance *paperclipv1alpha1.Instance) string {
 		return repo + "@" + instance.Spec.Image.Digest
 	}
 
-	tag := instance.Spec.Image.Tag
-	if tag == "" {
-		tag = "latest"
-	}
-	return repo + ":" + tag
+	return repo + ":" + instance.Spec.Image.Tag
 }
 
 func imagePullPolicy(instance *paperclipv1alpha1.Instance) corev1.PullPolicy {
