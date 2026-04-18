@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.11.0...v0.11.1) (2026-04-18)
+
+
+### Bug Fixes
+
+* **ci:** drop --remote from gh repo fork in OperatorHub submission ([#58](https://github.com/paperclipinc/paperclip-operator/issues/58)) ([5893df1](https://github.com/paperclipinc/paperclip-operator/commit/5893df15622fe11883c093cc44107178db3cc734))
+
 ## [0.11.0](https://github.com/paperclipinc/paperclip-operator/compare/v0.10.0...v0.11.0) (2026-04-17)
 
 
