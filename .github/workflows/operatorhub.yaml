@@ -82,8 +82,23 @@ jobs:
           mkdir -p operators/paperclip-operator
           cp -r ../submission/operators/paperclip-operator/${VERSION} operators/paperclip-operator/${VERSION}
 
-          git add "operators/paperclip-operator/${VERSION}"
-          git commit -m "operator paperclip-operator (${VERSION})"
+          # Write the operator-level ci.yaml so framework-automation auto-applies
+          # the `authorized-changes` label on our bundle PRs. Without this, each
+          # PR waits for a human maintainer review (typically ~hours to a day).
+          # Idempotent: if the file already exists upstream with the same content,
+          # git will see no diff.
+          cat > operators/paperclip-operator/ci.yaml <<'CI_YAML'
+          ---
+          # Authorized reviewers for paperclip-operator PRs.
+          # A PR authored by any user listed here gets the `authorized-changes` label
+          # applied automatically by framework-automation, which enables the PR to
+          # auto-merge once framework checks pass.
+          reviewers:
+            - stubbi
+          CI_YAML
+
+          git add "operators/paperclip-operator/${VERSION}" operators/paperclip-operator/ci.yaml
+          git commit -s -m "operator paperclip-operator (${VERSION})"
           git push --force origin "${BRANCH}"
 
           # Create PR or update existing one
