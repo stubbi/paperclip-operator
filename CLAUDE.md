@@ -6,7 +6,13 @@ Go-based Kubernetes operator for managing Paperclip instances (the open-source A
 
 - **Module:** `github.com/paperclipinc/paperclip-operator`
 - **Go version:** 1.25
-- **GitHub:** `paperclipinc/paperclip-operator` (GHCR org: `paperclipinc`)
+- **GitHub:** `stubbi/paperclip-operator` (moved from `paperclipinc`; GHCR namespace still `paperclipinc`)
+
+### Release credentials
+
+- `RELEASE_PLEASE_TOKEN` (secret): PAT used by release-please and to publish the drafted release.
+- `IMAGE_NAMESPACE` (variable, default `paperclipinc`): GHCR namespace for the image and the OCI chart. `release.yaml` fails early unless it matches `image.repository` in `charts/paperclip-operator/values.yaml`; change both together.
+- `GHCR_PUSH_TOKEN` (secret) + `GHCR_PUSH_USER` (variable): needed to push into a namespace the repository owner does not own (`paperclipinc` since the transfer). `GITHUB_TOKEN` is the fallback.
 
 ## Commands
 
