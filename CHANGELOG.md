@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.2](https://github.com/stubbi/paperclip-operator/compare/v0.19.1...v0.19.2) (2026-10-11)
+
+
+### Bug Fixes
+
+* **bootstrap:** stop mounting the instance data volume on the bootstrap Job ([#118](https://github.com/stubbi/paperclip-operator/issues/118)) ([a96b2ac](https://github.com/stubbi/paperclip-operator/commit/a96b2acd25c801fdea9fe4584fdec031aba8a5b1))
+
 ## [0.19.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.19.0...v0.19.1) (2026-09-06)
 
 
