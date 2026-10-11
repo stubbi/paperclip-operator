@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 )
@@ -78,6 +79,34 @@ func TestBuildStatefulSet_DisableSignUpEnv(t *testing.T) {
 	env := containerEnv(inst)
 	wantEnvValue(t, env, "PAPERCLIP_AUTH_DISABLE_SIGN_UP", "true")
 	wantEnvValue(t, env, "PAPERCLIP_DEPLOYMENT_MODE", "authenticated")
+}
+
+// Regression for issue #120: with adminUser set, PAPERCLIP_AUTH_DISABLE_SIGN_UP
+// made the bootstrap Job's sign-up call fail with
+// EMAIL_PASSWORD_SIGN_UP_DISABLED, so the admin was never created. The flag is
+// held back until status.bootstrap records a completed bootstrap.
+func TestBuildStatefulSet_DisableSignUpDeferredUntilBootstrap(t *testing.T) {
+	inst := newTestInstance("p")
+	inst.Spec.Deployment.Mode = "authenticated"
+	inst.Spec.Auth.DisableSignUp = true
+	inst.Spec.Auth.AdminUser = &paperclipv1alpha1.AdminUserSpec{
+		Email: "admin@test.com",
+		PasswordSecretRef: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "admin-secret"},
+			Key:                  "password",
+		},
+	}
+
+	if hasEnvName(containerEnv(inst), "PAPERCLIP_AUTH_DISABLE_SIGN_UP") {
+		t.Error("PAPERCLIP_AUTH_DISABLE_SIGN_UP must be held back while the admin bootstrap is pending")
+	}
+	if job := BuildBootstrapJob(inst); hasEnvName(job.Spec.Template.Spec.Containers[0].Env, "PAPERCLIP_AUTH_DISABLE_SIGN_UP") {
+		t.Error("bootstrap Job env must not carry PAPERCLIP_AUTH_DISABLE_SIGN_UP while bootstrap is pending")
+	}
+
+	now := metav1.Now()
+	inst.Status.Bootstrap = &paperclipv1alpha1.BootstrapStatus{CompletionTime: &now, SpecHash: "abc"}
+	wantEnvValue(t, containerEnv(inst), "PAPERCLIP_AUTH_DISABLE_SIGN_UP", "true")
 }
 
 func TestBuildStatefulSet_DisableSignUpOmittedByDefault(t *testing.T) {
