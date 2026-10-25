@@ -8,6 +8,7 @@
 # The generated role is the source of truth (derived from +kubebuilder:rbac
 # markers). The Helm chart may be a superset but must not be missing any
 # permissions.
+# Also render the chart to check its leader-election Role and binding offline.
 
 set -euo pipefail
 
@@ -94,7 +95,7 @@ parse_helm() {
           for (v = 1; v <= nverbs; v++)
             print groups[g] "|" resources[r] "|" verbs[v]
     }
-  ' "$HELM" | sort -u
+  ' "${1:-$HELM}" | sort -u
 }
 
 GENERATED_TRIPLES=$(parse_generated)
@@ -121,3 +122,59 @@ if [ -n "$MISSING" ]; then
 fi
 
 echo "Helm chart RBAC is in sync with kubebuilder markers."
+
+RENDERED=$(mktemp)
+trap 'rm -f "$RENDERED"' EXIT
+HELM_ARGS=(template rbac-check charts/paperclip-operator
+  --namespace rbac-check --show-only templates/rbac.yaml
+  --set fullnameOverride=rbac-check --set serviceAccount.name=rbac-check-account)
+helm "${HELM_ARGS[@]}" > "$RENDERED"
+
+rendered_kind() {
+  awk -v kind="$1" '
+    /^---/ && selected { exit }
+    /^kind:/ { selected = ($2 == kind) }
+    selected { print }
+  ' "$RENDERED"
+}
+
+ROLE=$(rendered_kind Role)
+BINDING=$(rendered_kind RoleBinding)
+# LeaseLock uses only get/create/update, not the scaffold's legacy permissions.
+REQUIRED_LEASES=$(printf '%s\n' \
+  'coordination.k8s.io|leases|create' \
+  'coordination.k8s.io|leases|get' \
+  'coordination.k8s.io|leases|update')
+LEASE_TRIPLES=$(parse_helm <(printf '%s\n' "$ROLE"))
+MISSING_LEASES=$(comm -23 <(echo "$REQUIRED_LEASES") <(echo "$LEASE_TRIPLES"))
+if [ -n "$MISSING_LEASES" ]; then
+  echo "::error::Helm leader-election Role is missing Lease permissions:"
+  echo "$MISSING_LEASES"
+  exit 1
+fi
+if ! grep -Fxq '  name: rbac-check-leader-election-role' <<< "$ROLE" ||
+   ! grep -Fxq '  namespace: rbac-check' <<< "$ROLE"; then
+  echo "::error::Helm leader-election Role has the wrong name or namespace."
+  exit 1
+fi
+
+for line in \
+  '  namespace: rbac-check' \
+  '  apiGroup: rbac.authorization.k8s.io' \
+  '  kind: Role' \
+  '  name: rbac-check-leader-election-role' \
+  '  - kind: ServiceAccount' \
+  '    name: rbac-check-account' \
+  '    namespace: rbac-check'; do
+  if ! grep -Fxq "$line" <<< "$BINDING"; then
+    echo "::error::Helm leader-election RoleBinding is missing: $line"
+    exit 1
+  fi
+done
+
+helm "${HELM_ARGS[@]}" --set leaderElection.enabled=false > "$RENDERED"
+if [ -n "$(rendered_kind Role)$(rendered_kind RoleBinding)" ]; then
+  echo "::error::Disabled leader election must not grant namespaced Lease RBAC."
+  exit 1
+fi
+echo "Helm leader-election RBAC checks passed."
