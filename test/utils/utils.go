@@ -177,6 +177,33 @@ func LoadImageToKindClusterWithName(name string) error {
 	return err
 }
 
+// PullImageIntoKindNodes pulls a remote image directly inside every node of
+// the kind cluster with crictl. Use this for registry images instead of
+// `docker pull` + `kind load docker-image`: with Docker's containerd image
+// store, a pulled multi-platform image only has the host platform's content
+// locally, and kind's `ctr images import --all-platforms` then fails with
+// "content digest ...: not found".
+func PullImageIntoKindNodes(image string) error {
+	cluster := "kind"
+	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
+		cluster = v
+	}
+	out, err := Run(exec.Command("kind", "get", "nodes", "--name", cluster))
+	if err != nil {
+		return err
+	}
+	nodes := GetNonEmptyLines(out)
+	if len(nodes) == 0 {
+		return fmt.Errorf("no nodes found for kind cluster %q", cluster)
+	}
+	for _, node := range nodes {
+		if _, err := Run(exec.Command("docker", "exec", node, "crictl", "pull", image)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // GetNonEmptyLines converts given command output string into individual objects
 // according to line breakers, and ignores the empty elements in it.
 func GetNonEmptyLines(output string) []string {
