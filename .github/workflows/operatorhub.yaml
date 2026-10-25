@@ -36,7 +36,7 @@ jobs:
           # Resolve the published image to an immutable digest reference so the
           # submitted bundle is pinned (OLM best practice). Fall back to the
           # floating tag if the digest cannot be resolved (e.g. registry hiccup).
-          IMG="ghcr.io/paperclipinc/paperclip-operator"
+          IMG="ghcr.io/stubbi/paperclip-operator"
           DIGEST="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{ .Manifest.Digest }}' 2>/dev/null || true)"
           if [ -n "${DIGEST}" ]; then IMG_REF="${IMG}@${DIGEST}"; else IMG_REF="${IMG}:${TAG}"; fi
           echo "Pinning image to: ${IMG_REF}"
@@ -46,7 +46,7 @@ jobs:
           # Copy and version the CSV
           sed \
             -e "s/paperclip-operator\.v[0-9]\+\.[0-9]\+\.[0-9]\+/paperclip-operator.v${VERSION}/g" \
-            -e "s|ghcr.io/paperclipinc/paperclip-operator:v[0-9]\+\.[0-9]\+\.[0-9]\+|${IMG_REF}|g" \
+            -e "s|ghcr.io/[a-z0-9-]*/paperclip-operator:v[0-9]\+\.[0-9]\+\.[0-9]\+|${IMG_REF}|g" \
             -e "s/createdAt: .*/createdAt: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" \
             -e "s/^  version: [0-9]\+\.[0-9]\+\.[0-9]\+/  version: ${VERSION}/" \
             bundle/manifests/paperclip-operator.v*.clusterserviceversion.yaml \
@@ -144,7 +144,7 @@ jobs:
 
           #### Testing
           - CI tests pass on the source repository
-          - Container image is published and signed at \`ghcr.io/paperclipinc/paperclip-operator:v${VERSION}\`
+          - Container image is published and signed at \`ghcr.io/stubbi/paperclip-operator:v${VERSION}\`
           EOF
           )"
           else
@@ -177,7 +177,7 @@ jobs:
           # Resolve the published image to an immutable digest reference so the
           # submitted bundle is pinned (OLM best practice). Fall back to the
           # floating tag if the digest cannot be resolved (e.g. registry hiccup).
-          IMG="ghcr.io/paperclipinc/paperclip-operator"
+          IMG="ghcr.io/stubbi/paperclip-operator"
           DIGEST="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{ .Manifest.Digest }}' 2>/dev/null || true)"
           if [ -n "${DIGEST}" ]; then IMG_REF="${IMG}@${DIGEST}"; else IMG_REF="${IMG}:${TAG}"; fi
           echo "Pinning image to: ${IMG_REF}"
@@ -187,7 +187,7 @@ jobs:
           # Copy and version the CSV
           sed \
             -e "s/paperclip-operator\.v[0-9]\+\.[0-9]\+\.[0-9]\+/paperclip-operator.v${VERSION}/g" \
-            -e "s|ghcr.io/paperclipinc/paperclip-operator:v[0-9]\+\.[0-9]\+\.[0-9]\+|${IMG_REF}|g" \
+            -e "s|ghcr.io/[a-z0-9-]*/paperclip-operator:v[0-9]\+\.[0-9]\+\.[0-9]\+|${IMG_REF}|g" \
             -e "s/createdAt: .*/createdAt: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" \
             -e "s/^  version: [0-9]\+\.[0-9]\+\.[0-9]\+/  version: ${VERSION}/" \
             bundle/manifests/paperclip-operator.v*.clusterserviceversion.yaml \
@@ -278,7 +278,7 @@ jobs:
 
           #### Testing
           - CI tests pass on the source repository
-          - Container image is published and signed at \`ghcr.io/paperclipinc/paperclip-operator:v${VERSION}\`
+          - Container image is published and signed at \`ghcr.io/stubbi/paperclip-operator:v${VERSION}\`
           EOF
           )"
           else

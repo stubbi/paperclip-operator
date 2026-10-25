@@ -90,7 +90,7 @@ metadata:
       ]
     capabilities: Auto Pilot
     categories: AI/Machine Learning
-    containerImage: ghcr.io/paperclipinc/paperclip-operator:v0.1.0
+    containerImage: ghcr.io/stubbi/paperclip-operator:v0.1.0
     createdAt: "2026-03-19T00:00:00Z"
     description: Production-grade Kubernetes operator for Paperclip, the open-source AI agent orchestration platform for zero-human companies.
     operators.operatorframework.io/builder: operator-sdk-v1.42.0
@@ -465,7 +465,7 @@ spec:
                       - --metrics-bind-address=:8443
                       - --metrics-secure=true
                       - --leader-elect
-                    image: ghcr.io/paperclipinc/paperclip-operator:v0.1.0
+                    image: ghcr.io/stubbi/paperclip-operator:v0.1.0
                     livenessProbe:
                       httpGet:
                         path: /healthz
@@ -502,7 +502,7 @@ spec:
     strategy: deployment
   relatedImages:
     - name: paperclip-operator
-      image: ghcr.io/paperclipinc/paperclip-operator:v0.1.0
+      image: ghcr.io/stubbi/paperclip-operator:v0.1.0
   installModes:
     - supported: true
       type: OwnNamespace

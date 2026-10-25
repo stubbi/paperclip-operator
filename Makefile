@@ -151,15 +151,15 @@ scorecard: operator-sdk ## Run operator-sdk scorecard tests.
 
 .PHONY: verify-signing
 verify-signing: ## Verify the latest published release is Cosign-signed and SBOM-attested.
-	@VERSION=$$(gh release view --repo paperclipinc/paperclip-operator --json tagName --jq .tagName); \
-	IMAGE="ghcr.io/paperclipinc/paperclip-operator:$${VERSION}"; \
+	@VERSION=$$(gh release view --repo stubbi/paperclip-operator --json tagName --jq .tagName); \
+	IMAGE="ghcr.io/stubbi/paperclip-operator:$${VERSION}"; \
 	echo "Verifying $${IMAGE}..."; \
 	cosign verify "$${IMAGE}" \
-	  --certificate-identity-regexp 'https://github.com/paperclipinc/paperclip-operator/.github/workflows/.*' \
+	  --certificate-identity-regexp 'https://github.com/(paperclipinc|stubbi)/paperclip-operator/.github/workflows/.*' \
 	  --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null || { echo "::error::signature verification failed for $${IMAGE}"; exit 1; }; \
 	echo "Verifying SBOM attestation..."; \
 	cosign verify-attestation "$${IMAGE}" --type spdxjson \
-	  --certificate-identity-regexp 'https://github.com/paperclipinc/paperclip-operator/.github/workflows/.*' \
+	  --certificate-identity-regexp 'https://github.com/(paperclipinc|stubbi)/paperclip-operator/.github/workflows/.*' \
 	  --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null || { echo "::error::SBOM attestation verification failed for $${IMAGE}"; exit 1; }; \
 	echo "OK: $${IMAGE} is signed and SBOM-attested."
 
