@@ -8,12 +8,14 @@ on:
 env:
   REGISTRY: ghcr.io
   # GHCR namespace for the operator image and the OCI chart. The repository
-  # moved from paperclipinc to stubbi, but the published artifacts (chart
-  # default image, OperatorHub CSV, Artifact Hub) still live under
-  # ghcr.io/paperclipinc, so the namespace is pinned here instead of being
-  # derived from github.repository_owner. Override with the repository
+  # moved from paperclipinc to stubbi. Releases up to v0.19.1 live under
+  # ghcr.io/paperclipinc; the repository has no credentials for that
+  # namespace any more, so releases from v0.19.2 on are published to
+  # ghcr.io/stubbi (the repository owner's namespace, writable with
+  # GITHUB_TOKEN). The namespace is pinned here and must match the chart's
+  # default image.repository (checked below). Override with the repository
   # variable IMAGE_NAMESPACE when moving namespaces.
-  IMAGE_NAMESPACE: ${{ vars.IMAGE_NAMESPACE || 'paperclipinc' }}
+  IMAGE_NAMESPACE: ${{ vars.IMAGE_NAMESPACE || 'stubbi' }}
 
 jobs:
   release:
@@ -43,9 +45,9 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           # GITHUB_TOKEN can only push into the repository owner's namespace.
-          # To publish into another one (ghcr.io/paperclipinc after the
-          # transfer) set GHCR_PUSH_TOKEN (classic PAT, write:packages) and
-          # GHCR_PUSH_USER to a member of that namespace.
+          # To publish into another one (e.g. ghcr.io/paperclipinc) set
+          # GHCR_PUSH_TOKEN (classic PAT, write:packages) and GHCR_PUSH_USER
+          # to a member of that namespace, plus the IMAGE_NAMESPACE variable.
           username: ${{ vars.GHCR_PUSH_USER || github.actor }}
           password: ${{ secrets.GHCR_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
 

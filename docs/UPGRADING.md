@@ -5,6 +5,31 @@ summary: Breaking changes and migration steps between operator releases
 
 # Upgrading
 
+## Registry move (v0.19.2)
+
+The repository moved from `paperclipinc/paperclip-operator` to
+`stubbi/paperclip-operator`. Starting with v0.19.2 the operator image and the
+Helm chart are published under `ghcr.io/stubbi`:
+
+- Image: `ghcr.io/stubbi/paperclip-operator`
+- Chart: `oci://ghcr.io/stubbi/charts/paperclip-operator`
+
+Releases up to v0.19.1 stay available under `ghcr.io/paperclipinc`. The chart's
+default `image.repository` points at the new location, so a chart upgrade picks
+it up automatically. If you pin `image.repository` yourself, or install the
+chart from `oci://ghcr.io/paperclipinc/charts`, switch to the new location to
+receive v0.19.2 and later:
+
+```bash
+helm upgrade paperclip-operator \
+  oci://ghcr.io/stubbi/charts/paperclip-operator \
+  --namespace paperclip-operator-system
+```
+
+Signatures are made by the release workflow of
+`github.com/stubbi/paperclip-operator`; adjust any `cosign verify
+--certificate-identity-regexp` policy accordingly.
+
 ## Config realignment (breaking)
 
 This release realigns the operator with the Paperclip app's real configuration

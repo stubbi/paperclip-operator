@@ -6,13 +6,13 @@ Go-based Kubernetes operator for managing Paperclip instances (the open-source A
 
 - **Module:** `github.com/paperclipinc/paperclip-operator`
 - **Go version:** 1.25
-- **GitHub:** `stubbi/paperclip-operator` (moved from `paperclipinc`; GHCR namespace still `paperclipinc`)
+- **GitHub:** `stubbi/paperclip-operator` (moved from `paperclipinc`; releases from v0.19.2 publish to `ghcr.io/stubbi`, older ones stay at `ghcr.io/paperclipinc`)
 
 ### Release credentials
 
 - `RELEASE_PLEASE_TOKEN` (secret): PAT used by release-please and to publish the drafted release.
-- `IMAGE_NAMESPACE` (variable, default `paperclipinc`): GHCR namespace for the image and the OCI chart. `release.yaml` fails early unless it matches `image.repository` in `charts/paperclip-operator/values.yaml`; change both together.
-- `GHCR_PUSH_TOKEN` (secret) + `GHCR_PUSH_USER` (variable): needed to push into a namespace the repository owner does not own (`paperclipinc` since the transfer). `GITHUB_TOKEN` is the fallback.
+- `IMAGE_NAMESPACE` (variable, default `stubbi`): GHCR namespace for the image and the OCI chart. `release.yaml` fails early unless it matches `image.repository` in `charts/paperclip-operator/values.yaml`; change both together.
+- `GHCR_PUSH_TOKEN` (secret) + `GHCR_PUSH_USER` (variable): only needed to push into a namespace the repository owner does not own (e.g. `paperclipinc`). `GITHUB_TOKEN` is the fallback.
 
 ## Commands
 
@@ -196,7 +196,7 @@ Automated via release-please + GoReleaser:
 5. Cosign signs images, SBOM is generated and attested
 6. SBOM uploaded to draft release, then release is published (using PAT)
 7. Published release triggers `operatorhub.yaml`: auto-submits bundle PR to `k8s-operatorhub/community-operators`
-8. Helm chart is packaged and pushed to `oci://ghcr.io/paperclipinc/charts`
+8. Helm chart is packaged and pushed to `oci://ghcr.io/stubbi/charts`
 
 **Key config files:**
 - `release-please-config.json` -- `skip-github-release: true` (GoReleaser manages the release lifecycle)
@@ -208,4 +208,4 @@ Automated via release-please + GoReleaser:
 
 **Manual trigger:** `gh workflow run "OperatorHub Submission" -f tag=vX.Y.Z`
 
-Image: `ghcr.io/paperclipinc/paperclip-operator`
+Image: `ghcr.io/stubbi/paperclip-operator` (releases up to v0.19.1: `ghcr.io/paperclipinc/paperclip-operator`)
