@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.2](https://github.com/stubbi/paperclip-operator/compare/v0.19.1...v0.19.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* **bootstrap:** let adminUser bootstrap work with auth.disableSignUp ([#124](https://github.com/stubbi/paperclip-operator/issues/124)) ([80b7966](https://github.com/stubbi/paperclip-operator/commit/80b79668ef724f1fb3adef86d67f01d0fe0bc483)), closes [#120](https://github.com/stubbi/paperclip-operator/issues/120)
+* **bootstrap:** stop mounting the instance data volume on the bootstrap Job ([#118](https://github.com/stubbi/paperclip-operator/issues/118)) ([a96b2ac](https://github.com/stubbi/paperclip-operator/commit/a96b2acd25c801fdea9fe4584fdec031aba8a5b1))
+
 ## [0.19.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.19.0...v0.19.1) (2026-09-06)
 
 
