@@ -455,7 +455,7 @@ spec:
                               for Prometheus rule selector matching).
                             type: object
                           runbookBaseURL:
-                            default: https://paperclip.inc/docs/operators/paperclip/runbooks
+                            default: https://github.com/stubbi/paperclip-operator/tree/main/docs/runbooks
                             description: RunbookBaseURL is the base URL for alert
                               runbook links.
                             type: string

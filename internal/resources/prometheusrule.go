@@ -25,7 +25,7 @@ import (
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 )
 
-const defaultRunbookBaseURL = "https://paperclip.inc/docs/operators/paperclip/runbooks"
+const defaultRunbookBaseURL = "https://github.com/stubbi/paperclip-operator/tree/main/docs/runbooks"
 
 // PrometheusRuleGVK returns the GroupVersionKind for PrometheusRule.
 func PrometheusRuleGVK() schema.GroupVersionKind {
