@@ -525,7 +525,7 @@ spec:
     endpoint: ""           # required for MinIO/R2
     credentialsSecretRef:
       name: paperclip-s3
-      # Secret must contain S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY
+      # Secret must contain AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
 ```
 
 > **Horizontal scaling:** Paperclip does not use Redis. Scaling out relies on a shared PostgreSQL database, shared object storage (S3/MinIO/R2) for files, and pod-0 heartbeat gating so only one replica runs the scheduler. Configure `database.mode: external` and `objectStorage` when running multiple replicas. The in-process rate limiter is per-pod by design.
