@@ -271,11 +271,9 @@ var _ = Describe("Manager", Ordered, func() {
 		const appImage = "ghcr.io/paperclipai/paperclip:sha-244a5b8"
 
 		BeforeAll(func() {
-			By("pre-pulling and loading the Paperclip app image into kind")
-			_, err := utils.Run(exec.Command("docker", "pull", appImage))
-			Expect(err).NotTo(HaveOccurred(), "Failed to pull the Paperclip app image")
-			Expect(utils.LoadImageToKindClusterWithName(appImage)).To(Succeed(),
-				"Failed to load the app image into kind")
+			By("pre-pulling the Paperclip app image inside the kind nodes")
+			Expect(utils.PullImageIntoKindNodes(appImage)).To(Succeed(),
+				"Failed to pull the app image into kind")
 
 			By("creating the instance namespace (unrestricted so the data-relabel init container may run)")
 			_, _ = utils.Run(exec.Command("kubectl", "create", "ns", instNS))
