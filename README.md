@@ -304,6 +304,8 @@ spec:
 
 This is the recommended replacement for the previous `single-tenant` mode. Combine it with `adminUser` bootstrap to provision the only account.
 
+When `adminUser` is also set, the operator holds `PAPERCLIP_AUTH_DISABLE_SIGN_UP` back until the bootstrap Job has created the admin (recorded in `status.bootstrap`), because the Job registers the admin through the sign-up API. It then applies the flag, which rolls the server pods once. Public sign-up is therefore open for the few minutes the first bootstrap takes; keep the instance private (`exposure: private`, no public Ingress) until `status.bootstrap` is set if that window matters to you.
+
 #### Automatic admin user bootstrap
 
 Skip the manual setup screen by configuring an initial admin user. The operator creates a bootstrap Job that registers the admin account on first deployment:

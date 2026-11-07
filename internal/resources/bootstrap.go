@@ -39,6 +39,30 @@ func sanitizeJSONString(s string) string {
 	return s
 }
 
+// SignUpDisabled reports whether the server should run with public sign-up
+// disabled (PAPERCLIP_AUTH_DISABLE_SIGN_UP=true).
+//
+// spec.auth.disableSignUp is applied by Better Auth to every sign-up with no
+// first-user exception, while the adminUser bootstrap Job creates the admin
+// through POST /api/auth/sign-up/email. Applying the flag from the start made
+// the two settings mutually exclusive on a fresh instance: the Job failed with
+// EMAIL_PASSWORD_SIGN_UP_DISABLED and nobody could ever log in (issue #120).
+//
+// So when adminUser is set, the flag is held back until the operator has
+// recorded a successful bootstrap in status.bootstrap, and applied from then
+// on (one rolling restart of the server). Once recorded it stays applied,
+// even if a later spec change re-runs the bootstrap Job: that Job then finds
+// the instance already bootstrapped and exits without needing sign-up.
+func SignUpDisabled(instance *paperclipv1alpha1.Instance) bool {
+	if !instance.Spec.Auth.DisableSignUp {
+		return false
+	}
+	if instance.Spec.Auth.AdminUser != nil && instance.Status.Bootstrap == nil {
+		return false
+	}
+	return true
+}
+
 // BootstrapJobName returns the bootstrap Job name for an Instance.
 func BootstrapJobName(instance *paperclipv1alpha1.Instance) string {
 	return instance.Name + "-bootstrap"

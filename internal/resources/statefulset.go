@@ -189,8 +189,10 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		})
 	}
 
-	// Disable public self-service sign-up (former single-tenant behavior)
-	if instance.Spec.Auth.DisableSignUp {
+	// Disable public self-service sign-up (former single-tenant behavior).
+	// Held back while the adminUser bootstrap is pending, see
+	// SignUpDisabled (issue #120).
+	if SignUpDisabled(instance) {
 		vars = append(vars, corev1.EnvVar{Name: "PAPERCLIP_AUTH_DISABLE_SIGN_UP", Value: "true"})
 	}
 
