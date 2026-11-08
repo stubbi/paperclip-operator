@@ -1432,7 +1432,7 @@ func TestBuildStatefulSetNoSeedInstanceAdminWhenNil(t *testing.T) {
 func TestBuildStatefulSetSeedInstanceAdmin(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	instance.Spec.Deployment.PlatformAdmin = &paperclipv1alpha1.PlatformAdminSpec{
-		Email:  "platform-admin@paperclip.inc",
+		Email:  "platform-admin@example.com",
 		Name:   "Platform Admin",
 		UserID: "user_123",
 	}
@@ -1472,7 +1472,7 @@ func TestBuildStatefulSetSeedInstanceAdmin(t *testing.T) {
 	if _, ok := env["DATABASE_URL"]; !ok {
 		t.Error("expected DATABASE_URL env var on seed init container")
 	}
-	if env["PAPERCLIP_SEED_ADMIN_EMAIL"].Value != "platform-admin@paperclip.inc" {
+	if env["PAPERCLIP_SEED_ADMIN_EMAIL"].Value != "platform-admin@example.com" {
 		t.Errorf("expected PAPERCLIP_SEED_ADMIN_EMAIL, got %q", env["PAPERCLIP_SEED_ADMIN_EMAIL"].Value)
 	}
 	if env["PAPERCLIP_SEED_ADMIN_NAME"].Value != "Platform Admin" {
@@ -1504,7 +1504,7 @@ func TestBuildStatefulSetSeedInstanceAdmin(t *testing.T) {
 func TestBuildStatefulSetSeedInstanceAdminOptionalEnvOmitted(t *testing.T) {
 	instance := newTestInstance("my-paperclip")
 	instance.Spec.Deployment.PlatformAdmin = &paperclipv1alpha1.PlatformAdminSpec{
-		Email: "only-email@paperclip.inc",
+		Email: "only-email@example.com",
 	}
 	sts := BuildStatefulSet(instance, nil)
 

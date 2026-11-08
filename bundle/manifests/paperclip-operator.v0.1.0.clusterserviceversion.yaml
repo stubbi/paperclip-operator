@@ -95,7 +95,7 @@ metadata:
     description: Production-grade Kubernetes operator for Paperclip, the open-source AI agent orchestration platform for zero-human companies.
     operators.operatorframework.io/builder: operator-sdk-v1.42.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
-    repository: https://github.com/paperclipinc/paperclip-operator
+    repository: https://github.com/stubbi/paperclip-operator
     support: Paperclip Inc
 spec:
   apiservicedefinitions: {}
@@ -128,7 +128,7 @@ spec:
     ## Paperclip Operator
 
     The Paperclip Operator automates day 1 and day 2 lifecycle management
-    for [Paperclip](https://paperclip.inc), the open-source AI agent
+    for [Paperclip](https://github.com/paperclipai/paperclip), the open-source AI agent
     orchestration platform for zero-human companies. Declare a single
     `Instance` custom resource and the operator provisions the full stack:
     PostgreSQL, Redis, persistent storage, ingress, network policies,
@@ -214,11 +214,9 @@ spec:
 
     ### Support and links
 
-    * Website: [paperclip.inc](https://paperclip.inc)
-    * App repository: [github.com/paperclipinc/paperclip](https://github.com/paperclipinc/paperclip)
-    * Operator repository: [github.com/paperclipinc/paperclip-operator](https://github.com/paperclipinc/paperclip-operator)
-    * Report an issue: [github.com/paperclipinc/paperclip-operator/issues](https://github.com/paperclipinc/paperclip-operator/issues)
-    * Contact: contact@paperclip.inc
+    * App repository: [github.com/paperclipai/paperclip](https://github.com/paperclipai/paperclip)
+    * Operator repository: [github.com/stubbi/paperclip-operator](https://github.com/stubbi/paperclip-operator)
+    * Report an issue: [github.com/stubbi/paperclip-operator/issues](https://github.com/stubbi/paperclip-operator/issues)
   displayName: Paperclip Operator
   icon:
     - base64data: "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMyNjI1MWUiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogIDxwYXRoIGQ9Im0xNiA2LTguNDE0IDguNTg2YTIgMiAwIDAgMCAyLjgyOSAyLjgyOWw4LjQxNC04LjU4NmE0IDQgMCAxIDAtNS42NTctNS42NTdsLTguMzc5IDguNTUxYTYgNiAwIDEgMCA4LjQ4NSA4LjQ4NWw4LjM3OS04LjU1MSIvPgo8L3N2Zz4K"
@@ -519,20 +517,17 @@ spec:
     - orchestration
     - kubernetes
   links:
-    - name: Paperclip Homepage
-      url: https://paperclip.inc
     - name: Paperclip App
-      url: https://github.com/paperclipinc/paperclip
+      url: https://github.com/paperclipai/paperclip
     - name: Paperclip Operator
-      url: https://github.com/paperclipinc/paperclip-operator
+      url: https://github.com/stubbi/paperclip-operator
     - name: Report an Issue
-      url: https://github.com/paperclipinc/paperclip-operator/issues
+      url: https://github.com/stubbi/paperclip-operator/issues
   maintainers:
-    - email: contact@paperclip.inc
-      name: Paperclip Team
+    - name: stubbi
   maturity: alpha
   minKubeVersion: 1.28.0
   provider:
-    name: Paperclip Inc
-    url: https://paperclip.inc
+    name: stubbi
+    url: https://github.com/stubbi
   version: 0.1.0
