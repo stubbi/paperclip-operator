@@ -155,7 +155,7 @@ verify-signing: ## Verify the latest published release is Cosign-signed and SBOM
 	VERSION=$$(gh release view --repo stubbi/paperclip-operator --json tagName --jq .tagName); \
 	CHART=$$(gh api --method GET repos/stubbi/paperclip-operator/contents/charts/paperclip-operator/values.yaml -f ref="$${VERSION}" -H 'Accept: application/vnd.github.raw+json'); \
 	REPOSITORY=$$(printf '%s\n' "$$CHART" | awk '/^image:/{f=1} f && /repository:/{print $$2; exit}'); \
-	printf '%s\n' "$$REPOSITORY" | grep -Eq '^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$$' || { echo "::error::invalid operator image repository in the released chart"; exit 1; }; \
+	[[ "$$REPOSITORY" =~ ^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$$ ]] || { echo "::error::invalid operator image repository in the released chart"; exit 1; }; \
 	IMAGE="$${REPOSITORY}:$${VERSION}"; \
 	echo "Verifying $${IMAGE}..."; \
 	cosign verify "$${IMAGE}" \

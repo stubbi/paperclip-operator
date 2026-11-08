@@ -43,6 +43,9 @@ class RegistrySelectionTest(unittest.TestCase):
         path.chmod(0o755)
 
     def prepare(self, job, tag, repository):
+        shutil.rmtree(self.root / "submission", ignore_errors=True)
+        (self.root / "outputs").unlink(missing_ok=True)
+        self.requests.unlink(missing_ok=True)
         self.values.write_text(f"image:\n  repository: {repository}\n")
         workflow = yaml.safe_load((ROOT / ".github/workflows/operatorhub.yaml").read_text())
         step = next(s for s in workflow["jobs"][job]["steps"] if s.get("name") == "Prepare bundle")
@@ -68,12 +71,24 @@ class RegistrySelectionTest(unittest.TestCase):
 
     def test_each_catalog_rejects_missing_or_malformed_digests(self):
         for job in ["submit", "submit-redhat"]:
-            for digest, status in [("", "1"), ("", "0"), ("null", "0"), ("sha256:abc", "0"), ("<html>504</html>", "0")]:
+            for digest, status in [("", "1"), ("", "0"), ("null", "0"), ("sha256:abc", "0"), ("<html>504</html>", "0"), (DIGEST + "\nextra=garbage", "0"), (DIGEST + "\n" + DIGEST, "0")]:
                 with self.subTest(job=job, digest=digest, status=status):
                     self.env.update(DOCKER_DIGEST=digest, DOCKER_STATUS=status)
                     result = self.prepare(job, "v0.19.1", "ghcr.io/paperclipinc/paperclip-operator")
                     self.assertNotEqual(result.returncode, 0, result.stdout)
                     self.assertFalse((self.root / "submission").exists())
+                    self.assertFalse((self.root / "outputs").exists())
+
+    def test_chart_defaults_keep_legacy_versions_in_the_published_namespace(self):
+        chart = yaml.safe_load((ROOT / "charts/paperclip-operator/Chart.yaml").read_text())
+        values = yaml.safe_load((ROOT / "charts/paperclip-operator/values.yaml").read_text())
+        version = tuple(int(part) for part in chart["appVersion"].split("."))
+        repository = values["image"]["repository"]
+        if version < (0, 19, 2):
+            self.assertEqual(repository, "ghcr.io/paperclipinc/paperclip-operator",
+                             "legacy release tags were not published in stubbi")
+        images = yaml.safe_load(chart["annotations"]["artifacthub.io/images"])
+        self.assertEqual(images[0]["image"], repository + ":v" + chart["appVersion"])
 
     def test_each_catalog_rejects_an_invalid_chart_repository(self):
         for job in ["submit", "submit-redhat"]:

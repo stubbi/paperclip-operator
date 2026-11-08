@@ -8,21 +8,25 @@ summary: Breaking changes and migration steps between operator releases
 ## Registry move (v0.19.2)
 
 The repository moved from `paperclipinc/paperclip-operator` to
-`stubbi/paperclip-operator`. Starting with v0.19.2 the operator image and the
-Helm chart are published under `ghcr.io/stubbi`:
+`stubbi/paperclip-operator`. The current published v0.19.1 release stays under
+`ghcr.io/paperclipinc`, including the chart defaults and quickstart. The
+namespace switch is staged with the v0.19.2 version bump in the release PR.
+After v0.19.2 is published, its operator image and Helm chart use `ghcr.io/stubbi`:
 
 - Image: `ghcr.io/stubbi/paperclip-operator`
 - Chart: `oci://ghcr.io/stubbi/charts/paperclip-operator`
 
 Releases up to v0.19.1 stay available under `ghcr.io/paperclipinc`. The chart's
-default `image.repository` points at the new location, so a chart upgrade picks
+default `image.repository` changes with v0.19.2, so that chart upgrade will pick
 it up automatically. If you pin `image.repository` yourself, or install the
 chart from `oci://ghcr.io/paperclipinc/charts`, switch to the new location to
 receive v0.19.2 and later:
 
 ```bash
+# After v0.19.2 has been published
 helm upgrade paperclip-operator \
   oci://ghcr.io/stubbi/charts/paperclip-operator \
+  --version 0.19.2 \
   --namespace paperclip-operator-system
 ```
 

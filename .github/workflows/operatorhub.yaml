@@ -38,7 +38,7 @@ jobs:
           # checked by release.yaml, including older paperclipinc releases and
           # future IMAGE_NAMESPACE changes. Never guess from the current owner.
           IMG=$(awk '/^image:/{f=1} f && /repository:/{print $2; exit}' charts/paperclip-operator/values.yaml)
-          if ! printf '%s\n' "$IMG" | grep -Eq '^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$'; then
+          if ! [[ "$IMG" =~ ^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$ ]]; then
             echo "::error::invalid operator image repository in the tagged chart: $IMG"
             exit 1
           fi
@@ -46,7 +46,7 @@ jobs:
             echo "::error::cannot resolve the published image ${IMG}:${TAG}"
             exit 1
           fi
-          if ! printf '%s\n' "$DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'; then
+          if ! [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
             echo "::error::registry returned an invalid digest for ${IMG}:${TAG}"
             exit 1
           fi
@@ -192,7 +192,7 @@ jobs:
           # checked by release.yaml, including older paperclipinc releases and
           # future IMAGE_NAMESPACE changes. Never guess from the current owner.
           IMG=$(awk '/^image:/{f=1} f && /repository:/{print $2; exit}' charts/paperclip-operator/values.yaml)
-          if ! printf '%s\n' "$IMG" | grep -Eq '^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$'; then
+          if ! [[ "$IMG" =~ ^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$ ]]; then
             echo "::error::invalid operator image repository in the tagged chart: $IMG"
             exit 1
           fi
@@ -200,7 +200,7 @@ jobs:
             echo "::error::cannot resolve the published image ${IMG}:${TAG}"
             exit 1
           fi
-          if ! printf '%s\n' "$DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'; then
+          if ! [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
             echo "::error::registry returned an invalid digest for ${IMG}:${TAG}"
             exit 1
           fi
