@@ -26,6 +26,12 @@ helm upgrade paperclip-operator \
   --namespace paperclip-operator-system
 ```
 
+OperatorHub submissions and `make verify-signing` read the image repository
+from the requested release tag's chart. Older tags retain their published
+namespace; a future namespace override must match that tagged chart, as the
+release preflight requires. Bundle submission stops if the registry does not
+return a valid SHA-256 digest, rather than submitting an unresolved tag.
+
 Signatures are made by the release workflow of
 `github.com/stubbi/paperclip-operator`; adjust any `cosign verify
 --certificate-identity-regexp` policy accordingly.
