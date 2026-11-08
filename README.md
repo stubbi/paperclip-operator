@@ -105,18 +105,21 @@ The operator reconciles this into a fully managed stack of Kubernetes resources:
 ### 1. Install the operator
 
 ```bash
-# Via Helm (recommended)
+# Current published release (v0.19.1), via Helm (recommended)
 helm install paperclip-operator \
   oci://ghcr.io/paperclipinc/charts/paperclip-operator \
+  --version 0.19.1 \
   --namespace paperclip-operator-system \
   --create-namespace
 ```
+
+> **Registry move:** v0.19.1 is the current published release and remains under `ghcr.io/paperclipinc`. The v0.19.2 release preparation will switch the image and chart to `ghcr.io/stubbi`; use that namespace after the release is published. See [Upgrading](docs/UPGRADING.md#registry-move-v0192).
 
 <details>
 <summary>Alternative: install with kubectl</summary>
 
 ```bash
-kubectl apply -f https://github.com/paperclipinc/paperclip-operator/releases/latest/download/install.yaml
+kubectl apply -f https://github.com/stubbi/paperclip-operator/releases/latest/download/install.yaml
 ```
 
 </details>
@@ -126,7 +129,7 @@ kubectl apply -f https://github.com/paperclipinc/paperclip-operator/releases/lat
 
 ```bash
 make install   # Install CRDs
-make deploy IMG=ghcr.io/paperclipinc/paperclip-operator:latest
+make deploy IMG=ghcr.io/stubbi/paperclip-operator:latest
 ```
 
 </details>

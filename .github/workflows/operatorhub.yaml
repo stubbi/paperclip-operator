@@ -28,27 +28,44 @@ jobs:
           ref: ${{ steps.version.outputs.tag }}
 
       - name: Prepare bundle
+        id: bundle
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="${{ steps.version.outputs.tag }}"
           BUNDLE_DIR="submission/operators/paperclip-operator/${VERSION}"
 
-          # Resolve the published image to an immutable digest reference so the
-          # submitted bundle is pinned (OLM best practice). Fall back to the
-          # floating tag if the digest cannot be resolved (e.g. registry hiccup).
-          IMG="ghcr.io/paperclipinc/paperclip-operator"
-          DIGEST="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{ .Manifest.Digest }}' 2>/dev/null || true)"
-          if [ -n "${DIGEST}" ]; then IMG_REF="${IMG}@${DIGEST}"; else IMG_REF="${IMG}:${TAG}"; fi
+          # Checkout selected the release tag. Its chart records the namespace
+          # checked by release.yaml, including older paperclipinc releases and
+          # future IMAGE_NAMESPACE changes. Never guess from the current owner.
+          IMG=$(awk '/^image:/{f=1} f && /repository:/{print $2; exit}' charts/paperclip-operator/values.yaml)
+          if ! [[ "$IMG" =~ ^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$ ]]; then
+            echo "::error::invalid operator image repository in the tagged chart: $IMG"
+            exit 1
+          fi
+          if ! MANIFEST_JSON="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{json .Manifest}}')"; then
+            echo "::error::cannot resolve the published image ${IMG}:${TAG}"
+            exit 1
+          fi
+          if ! DIGEST="$(printf '%s' "$MANIFEST_JSON" | jq -er '.digest')"; then
+            echo "::error::registry returned invalid manifest metadata for ${IMG}:${TAG}"
+            exit 1
+          fi
+          if ! [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::registry returned an invalid digest for ${IMG}:${TAG}"
+            exit 1
+          fi
+          IMG_REF="${IMG}@${DIGEST}"
+          echo "image-ref=${IMG_REF}" >> "$GITHUB_OUTPUT"
           echo "Pinning image to: ${IMG_REF}"
 
           mkdir -p "${BUNDLE_DIR}/manifests" "${BUNDLE_DIR}/metadata"
 
           # Copy and version the CSV
-          sed \
-            -e "s/paperclip-operator\.v[0-9]\+\.[0-9]\+\.[0-9]\+/paperclip-operator.v${VERSION}/g" \
-            -e "s|ghcr.io/paperclipinc/paperclip-operator:v[0-9]\+\.[0-9]\+\.[0-9]\+|${IMG_REF}|g" \
+          sed -E \
+            -e "s/paperclip-operator\.v[0-9]+\.[0-9]+\.[0-9]+/paperclip-operator.v${VERSION}/g" \
+            -e "s|ghcr.io/[a-z0-9-]+/paperclip-operator:v[0-9]+\.[0-9]+\.[0-9]+|${IMG_REF}|g" \
             -e "s/createdAt: .*/createdAt: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" \
-            -e "s/^  version: [0-9]\+\.[0-9]\+\.[0-9]\+/  version: ${VERSION}/" \
+            -e "s/^  version: [0-9]+\.[0-9]+\.[0-9]+/  version: ${VERSION}/" \
             bundle/manifests/paperclip-operator.v*.clusterserviceversion.yaml \
             > "${BUNDLE_DIR}/manifests/paperclip-operator.v${VERSION}.clusterserviceversion.yaml"
 
@@ -144,7 +161,7 @@ jobs:
 
           #### Testing
           - CI tests pass on the source repository
-          - Container image is published and signed at \`ghcr.io/paperclipinc/paperclip-operator:v${VERSION}\`
+          - Container image is published and signed at \`${{ steps.bundle.outputs.image-ref }}\`
           EOF
           )"
           else
@@ -169,27 +186,44 @@ jobs:
           ref: ${{ steps.version.outputs.tag }}
 
       - name: Prepare bundle
+        id: bundle
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="${{ steps.version.outputs.tag }}"
           BUNDLE_DIR="submission/operators/paperclip-operator/${VERSION}"
 
-          # Resolve the published image to an immutable digest reference so the
-          # submitted bundle is pinned (OLM best practice). Fall back to the
-          # floating tag if the digest cannot be resolved (e.g. registry hiccup).
-          IMG="ghcr.io/paperclipinc/paperclip-operator"
-          DIGEST="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{ .Manifest.Digest }}' 2>/dev/null || true)"
-          if [ -n "${DIGEST}" ]; then IMG_REF="${IMG}@${DIGEST}"; else IMG_REF="${IMG}:${TAG}"; fi
+          # Checkout selected the release tag. Its chart records the namespace
+          # checked by release.yaml, including older paperclipinc releases and
+          # future IMAGE_NAMESPACE changes. Never guess from the current owner.
+          IMG=$(awk '/^image:/{f=1} f && /repository:/{print $2; exit}' charts/paperclip-operator/values.yaml)
+          if ! [[ "$IMG" =~ ^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$ ]]; then
+            echo "::error::invalid operator image repository in the tagged chart: $IMG"
+            exit 1
+          fi
+          if ! MANIFEST_JSON="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{json .Manifest}}')"; then
+            echo "::error::cannot resolve the published image ${IMG}:${TAG}"
+            exit 1
+          fi
+          if ! DIGEST="$(printf '%s' "$MANIFEST_JSON" | jq -er '.digest')"; then
+            echo "::error::registry returned invalid manifest metadata for ${IMG}:${TAG}"
+            exit 1
+          fi
+          if ! [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::registry returned an invalid digest for ${IMG}:${TAG}"
+            exit 1
+          fi
+          IMG_REF="${IMG}@${DIGEST}"
+          echo "image-ref=${IMG_REF}" >> "$GITHUB_OUTPUT"
           echo "Pinning image to: ${IMG_REF}"
 
           mkdir -p "${BUNDLE_DIR}/manifests" "${BUNDLE_DIR}/metadata"
 
           # Copy and version the CSV
-          sed \
-            -e "s/paperclip-operator\.v[0-9]\+\.[0-9]\+\.[0-9]\+/paperclip-operator.v${VERSION}/g" \
-            -e "s|ghcr.io/paperclipinc/paperclip-operator:v[0-9]\+\.[0-9]\+\.[0-9]\+|${IMG_REF}|g" \
+          sed -E \
+            -e "s/paperclip-operator\.v[0-9]+\.[0-9]+\.[0-9]+/paperclip-operator.v${VERSION}/g" \
+            -e "s|ghcr.io/[a-z0-9-]+/paperclip-operator:v[0-9]+\.[0-9]+\.[0-9]+|${IMG_REF}|g" \
             -e "s/createdAt: .*/createdAt: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" \
-            -e "s/^  version: [0-9]\+\.[0-9]\+\.[0-9]\+/  version: ${VERSION}/" \
+            -e "s/^  version: [0-9]+\.[0-9]+\.[0-9]+/  version: ${VERSION}/" \
             bundle/manifests/paperclip-operator.v*.clusterserviceversion.yaml \
             > "${BUNDLE_DIR}/manifests/paperclip-operator.v${VERSION}.clusterserviceversion.yaml"
 
@@ -278,7 +312,7 @@ jobs:
 
           #### Testing
           - CI tests pass on the source repository
-          - Container image is published and signed at \`ghcr.io/paperclipinc/paperclip-operator:v${VERSION}\`
+          - Container image is published and signed at \`${{ steps.bundle.outputs.image-ref }}\`
           EOF
           )"
           else

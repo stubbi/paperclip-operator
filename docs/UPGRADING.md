@@ -5,6 +5,41 @@ summary: Breaking changes and migration steps between operator releases
 
 # Upgrading
 
+## Registry move (v0.19.2)
+
+The repository moved from `paperclipinc/paperclip-operator` to
+`stubbi/paperclip-operator`. The current published v0.19.1 release stays under
+`ghcr.io/paperclipinc`, including the chart defaults and quickstart. The
+namespace switch is staged with the v0.19.2 version bump in the release PR.
+After v0.19.2 is published, its operator image and Helm chart use `ghcr.io/stubbi`:
+
+- Image: `ghcr.io/stubbi/paperclip-operator`
+- Chart: `oci://ghcr.io/stubbi/charts/paperclip-operator`
+
+Releases up to v0.19.1 stay available under `ghcr.io/paperclipinc`. The chart's
+default `image.repository` changes with v0.19.2, so that chart upgrade will pick
+it up automatically. If you pin `image.repository` yourself, or install the
+chart from `oci://ghcr.io/paperclipinc/charts`, switch to the new location to
+receive v0.19.2 and later:
+
+```bash
+# After v0.19.2 has been published
+helm upgrade paperclip-operator \
+  oci://ghcr.io/stubbi/charts/paperclip-operator \
+  --version 0.19.2 \
+  --namespace paperclip-operator-system
+```
+
+OperatorHub submissions and `make verify-signing` read the image repository
+from the requested release tag's chart. Older tags retain their published
+namespace; a future namespace override must match that tagged chart, as the
+release preflight requires. Bundle submission stops if the registry does not
+return a valid SHA-256 digest, rather than submitting an unresolved tag.
+
+Signatures are made by the release workflow of
+`github.com/stubbi/paperclip-operator`; adjust any `cosign verify
+--certificate-identity-regexp` policy accordingly.
+
 ## Config realignment (breaking)
 
 This release realigns the operator with the Paperclip app's real configuration
