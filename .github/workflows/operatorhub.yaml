@@ -42,8 +42,12 @@ jobs:
             echo "::error::invalid operator image repository in the tagged chart: $IMG"
             exit 1
           fi
-          if ! DIGEST="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{ .Manifest.Digest }}')"; then
+          if ! MANIFEST_JSON="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{json .Manifest}}')"; then
             echo "::error::cannot resolve the published image ${IMG}:${TAG}"
+            exit 1
+          fi
+          if ! DIGEST="$(printf '%s' "$MANIFEST_JSON" | jq -er '.digest')"; then
+            echo "::error::registry returned invalid manifest metadata for ${IMG}:${TAG}"
             exit 1
           fi
           if ! [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
@@ -196,8 +200,12 @@ jobs:
             echo "::error::invalid operator image repository in the tagged chart: $IMG"
             exit 1
           fi
-          if ! DIGEST="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{ .Manifest.Digest }}')"; then
+          if ! MANIFEST_JSON="$(docker buildx imagetools inspect "${IMG}:${TAG}" --format '{{json .Manifest}}')"; then
             echo "::error::cannot resolve the published image ${IMG}:${TAG}"
+            exit 1
+          fi
+          if ! DIGEST="$(printf '%s' "$MANIFEST_JSON" | jq -er '.digest')"; then
+            echo "::error::registry returned invalid manifest metadata for ${IMG}:${TAG}"
             exit 1
           fi
           if ! [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then

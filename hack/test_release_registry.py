@@ -35,7 +35,17 @@ class RegistrySelectionTest(unittest.TestCase):
             "GITHUB_OUTPUT": str(self.root / "outputs"),
             "KUBECONFIG": "/dev/null",
         }
-        self.command("docker", 'printf "%s\\n" "$*" >> "$REQUESTS"\nprintf "%s\\n" "$DOCKER_DIGEST"\nexit "$DOCKER_STATUS"\n')
+        self.command("docker", '''printf "%s\\n" "$*" >> "$REQUESTS"
+if [ "${DOCKER_MANIFEST+x}" = x ]; then
+  printf '%s\\n' "$DOCKER_MANIFEST"
+else
+  case "$*" in
+    *'json .Manifest'*) python3 -c 'import json, os; print(json.dumps({"digest": os.environ["DOCKER_DIGEST"]}))' ;;
+    *) printf 'Name: fixture\\nDigest: %s\\n' "$DOCKER_DIGEST" ;;
+  esac
+fi
+exit "$DOCKER_STATUS"
+''')
 
     def command(self, name, body):
         path = self.bin / name
@@ -71,9 +81,19 @@ class RegistrySelectionTest(unittest.TestCase):
 
     def test_each_catalog_rejects_missing_or_malformed_digests(self):
         for job in ["submit", "submit-redhat"]:
-            for digest, status in [("", "1"), ("", "0"), ("null", "0"), ("sha256:abc", "0"), ("<html>504</html>", "0"), (DIGEST + "\nextra=garbage", "0"), (DIGEST + "\n" + DIGEST, "0")]:
+            for digest, status in [("", "1"), (DIGEST, "1"), ("", "0"), ("null", "0"), ("sha256:abc", "0"), ("<html>504</html>", "0"), (DIGEST + "\nextra=garbage", "0"), (DIGEST + "\n" + DIGEST, "0")]:
                 with self.subTest(job=job, digest=digest, status=status):
                     self.env.update(DOCKER_DIGEST=digest, DOCKER_STATUS=status)
+                    result = self.prepare(job, "v0.19.1", "ghcr.io/paperclipinc/paperclip-operator")
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+                    self.assertFalse((self.root / "submission").exists())
+                    self.assertFalse((self.root / "outputs").exists())
+
+    def test_each_catalog_rejects_invalid_manifest_json(self):
+        for job in ["submit", "submit-redhat"]:
+            for payload in ["", "Name: fixture\nDigest: " + DIGEST, "{broken", "{}", '{"digest":null}']:
+                with self.subTest(job=job, payload=payload):
+                    self.env["DOCKER_MANIFEST"] = payload
                     result = self.prepare(job, "v0.19.1", "ghcr.io/paperclipinc/paperclip-operator")
                     self.assertNotEqual(result.returncode, 0, result.stdout)
                     self.assertFalse((self.root / "submission").exists())
