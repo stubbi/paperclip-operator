@@ -13,13 +13,12 @@ keywords:
   - agents
   - orchestration
   - operator
-home: https://github.com/paperclipinc/paperclip-operator
-icon: https://paperclip.inc/favicon.svg
+home: https://github.com/stubbi/paperclip-operator
 sources:
-  - https://github.com/paperclipinc/paperclip-operator
+  - https://github.com/stubbi/paperclip-operator
 maintainers:
-  - name: paperclipinc
-    url: https://github.com/paperclipinc
+  - name: stubbi
+    url: https://github.com/stubbi
 annotations:
   artifacthub.io/category: ai-machine-learning
   artifacthub.io/license: Apache-2.0
@@ -27,14 +26,12 @@ annotations:
   artifacthub.io/operatorCapabilities: Seamless Upgrades
   artifacthub.io/prerelease: 'false'
   artifacthub.io/links: |
-    - name: Website
-      url: https://paperclip.inc
     - name: Documentation
-      url: https://paperclip.inc/docs/operators/paperclip
+      url: https://github.com/stubbi/paperclip-operator#readme
     - name: OperatorHub
       url: https://artifacthub.io/packages/olm/community-operators/paperclip-operator
     - name: support
-      url: https://github.com/paperclipinc/paperclip-operator/issues
+      url: https://github.com/stubbi/paperclip-operator/issues
   artifacthub.io/crds: |
     - kind: Instance
       version: v1alpha1

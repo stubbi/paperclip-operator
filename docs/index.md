@@ -1,7 +1,7 @@
 # Paperclip Operator
 
 The Paperclip Operator is a Kubernetes operator for deploying and managing
-[Paperclip](https://paperclip.inc) instances with production-grade security,
+[Paperclip](https://github.com/paperclipai/paperclip) instances with production-grade security,
 observability, and lifecycle management.
 
 It manages a single custom resource, `Instance` (short name `pci`), in the
