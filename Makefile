@@ -152,8 +152,9 @@ scorecard: operator-sdk ## Run operator-sdk scorecard tests.
 .PHONY: verify-signing
 verify-signing: ## Verify the latest published release is Cosign-signed and SBOM-attested.
 	@set -eu; \
-	VERSION=$$(gh release view --repo stubbi/paperclip-operator --json tagName --jq .tagName); \
-	CHART=$$(gh api --method GET repos/stubbi/paperclip-operator/contents/charts/paperclip-operator/values.yaml -f ref="$${VERSION}" -H 'Accept: application/vnd.github.raw+json'); \
+	VERSION=$$(gh release view --repo stubbi/paperclip-operator --json tagName --jq .tagName) || { echo "::error::failed to resolve the latest release tag"; exit 1; }; \
+	[ -n "$${VERSION}" ] || { echo "::error::latest release tag is empty"; exit 1; }; \
+	CHART=$$(gh api --method GET repos/stubbi/paperclip-operator/contents/charts/paperclip-operator/values.yaml -f ref="$${VERSION}" -H 'Accept: application/vnd.github.raw+json') || { echo "::error::failed to read the released chart"; exit 1; }; \
 	REPOSITORY=$$(printf '%s\n' "$$CHART" | awk '/^image:/{f=1} f && /repository:/{print $$2; exit}'); \
 	[[ "$$REPOSITORY" =~ ^ghcr\.io/[a-z0-9][a-z0-9-]*/paperclip-operator$$ ]] || { echo "::error::invalid operator image repository in the released chart"; exit 1; }; \
 	IMAGE="$${REPOSITORY}:$${VERSION}"; \
@@ -166,6 +167,10 @@ verify-signing: ## Verify the latest published release is Cosign-signed and SBOM
 	  --certificate-identity-regexp 'https://github.com/(paperclipinc|stubbi)/paperclip-operator/.github/workflows/.*' \
 	  --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null || { echo "::error::SBOM attestation verification failed for $${IMAGE}"; exit 1; }; \
 	echo "OK: $${IMAGE} is signed and SBOM-attested."
+
+.PHONY: test-verify-signing
+test-verify-signing: ## Test release lookup and workflow failure handling (requires PyYAML).
+	python3 hack/test-verify-signing.py
 
 .PHONY: bench
 bench: ## Run benchmarks for resource builders.
