@@ -97,9 +97,10 @@ const (
 	envDatabaseURL        = "DATABASE_URL"
 	databasePasswordKey   = "password"
 	envAWSAccessKeyID     = "AWS_ACCESS_KEY_ID"
-	envAWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
+	envAWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY" // #nosec G101 -- environment and Secret key name, not a credential //nolint:gosec
 	rbacVerbCreate        = "create"
 	rbacVerbDelete        = "delete"
+	rbacVerbPatch         = "patch"
 	rbacAPIGroup          = "rbac.authorization.k8s.io"
 )
 

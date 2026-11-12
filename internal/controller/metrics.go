@@ -21,7 +21,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
-const instanceMetricLabel = "instance"
+const (
+	instanceMetricLabel  = "instance"
+	namespaceMetricLabel = "namespace"
+)
 
 var (
 	reconcileTotal = prometheus.NewCounterVec(
@@ -29,7 +32,7 @@ var (
 			Name: "paperclip_reconcile_total",
 			Help: "Total number of reconciliations per instance",
 		},
-		[]string{instanceMetricLabel, "namespace", "result"},
+		[]string{instanceMetricLabel, namespaceMetricLabel, "result"},
 	)
 
 	reconcileDuration = prometheus.NewHistogramVec(
@@ -38,7 +41,7 @@ var (
 			Help:    "Duration of reconciliation in seconds",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{instanceMetricLabel, "namespace"},
+		[]string{instanceMetricLabel, namespaceMetricLabel},
 	)
 
 	instancePhase = prometheus.NewGaugeVec(
@@ -46,7 +49,7 @@ var (
 			Name: "paperclip_instance_phase",
 			Help: "Current phase of a Paperclip instance (1 = active for given phase)",
 		},
-		[]string{instanceMetricLabel, "namespace", "phase"},
+		[]string{instanceMetricLabel, namespaceMetricLabel, "phase"},
 	)
 
 	resourceCreationFailures = prometheus.NewCounterVec(
@@ -54,7 +57,7 @@ var (
 			Name: "paperclip_resource_creation_failures_total",
 			Help: "Total number of resource creation failures",
 		},
-		[]string{instanceMetricLabel, "namespace", "resource"},
+		[]string{instanceMetricLabel, namespaceMetricLabel, "resource"},
 	)
 
 	managedInstances = prometheus.NewGauge(
@@ -69,7 +72,7 @@ var (
 			Name: "paperclip_instance_info",
 			Help: "Information about a Paperclip instance (always 1, use for PromQL joins)",
 		},
-		[]string{instanceMetricLabel, "namespace", "version", "image"},
+		[]string{instanceMetricLabel, namespaceMetricLabel, "version", "image"},
 	)
 
 	instanceReady = prometheus.NewGaugeVec(
@@ -77,7 +80,7 @@ var (
 			Name: "paperclip_instance_ready",
 			Help: "Whether the Paperclip instance pod is ready (1=ready, 0=not ready)",
 		},
-		[]string{instanceMetricLabel, "namespace"},
+		[]string{instanceMetricLabel, namespaceMetricLabel},
 	)
 )
 

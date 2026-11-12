@@ -261,7 +261,7 @@ func buildBackupDBEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar 
 		})
 		vars = append(vars, corev1.EnvVar{
 			Name: envDatabaseURL,
-			Value: fmt.Sprintf("postgresql://paperclip:$(DB_PASSWORD)@%s-db.%s.svc.cluster.local:%d/paperclip",
+			Value: fmt.Sprintf(builtInPostgresURLFormat,
 				instance.Name, instance.Namespace, PostgreSQLPort),
 		})
 	}
