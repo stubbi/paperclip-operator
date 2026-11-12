@@ -162,7 +162,7 @@ All checks run on every push to main and every PR:
 
 | Job | What it does |
 |-----|-------------|
-| **Lint** | golangci-lint v2.1.0 |
+| **Lint** | golangci-lint v2.15.0 on Go 1.27.4 |
 | **Test** | `make test` (unit + envtest integration) on Go 1.27.4, with a separate Go 1.25 compatibility job |
 | **Security Scan** | gosec + Trivy (CRITICAL/HIGH) |
 | **Reconcile Guard** | Grep check preventing bare `r.Update()` on managed resources |
