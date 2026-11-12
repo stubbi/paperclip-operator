@@ -31,33 +31,33 @@ func executionPolicyRules(k *paperclipv1alpha1.K8sExecutionSpec) []rbacv1.Policy
 		{
 			APIGroups: []string{""},
 			Resources: []string{"namespaces"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// tenant-orchestrator: ensureServiceAccount (read/create the tenant SA
 		// that agent pods run as).
 		{
 			APIGroups: []string{""},
 			Resources: []string{"serviceaccounts"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// tenant-orchestrator: ensureRole + ensureRoleBinding (the in-namespace
 		// pods/log:get grant for the tenant SA).
 		{
-			APIGroups: []string{"rbac.authorization.k8s.io"},
+			APIGroups: []string{rbacAPIGroup},
 			Resources: []string{"roles", "rolebindings"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// tenant-orchestrator: ensureResourceQuota.
 		{
 			APIGroups: []string{""},
 			Resources: []string{"resourcequotas"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// tenant-orchestrator: ensureLimitRange.
 		{
 			APIGroups: []string{""},
 			Resources: []string{"limitranges"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// secret-manager: createPerRunSecret writes the per-run Opaque Secret
 		// (BOOTSTRAP_TOKEN + adapter env). Deletion is via ownerReference cascade
@@ -65,14 +65,14 @@ func executionPolicyRules(k *paperclipv1alpha1.K8sExecutionSpec) []rbacv1.Policy
 		{
 			APIGroups: []string{""},
 			Resources: []string{"secrets"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// tenant-orchestrator: ensureNetworkPolicies (deny-all + standard egress
 		// NetworkPolicy). read-on-404-then-create.
 		{
 			APIGroups: []string{"networking.k8s.io"},
 			Resources: []string{"networkpolicies"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		},
 		// job-orchestrator / sandbox-cr-orchestrator / plugin reachability check:
 		// findPodForJob + findPodForSandbox list pods (job-name / managed-by
@@ -96,7 +96,7 @@ func executionPolicyRules(k *paperclipv1alpha1.K8sExecutionSpec) []rbacv1.Policy
 		{
 			APIGroups: []string{""},
 			Resources: []string{"pods/exec"},
-			Verbs:     []string{"create", "get"},
+			Verbs:     []string{rbacVerbCreate, "get"},
 		},
 		// job-orchestrator: createJob / readNamespacedJobStatus / deleteJob (the
 		// default "job" backend runs each agent as a batch/v1 Job).
@@ -106,7 +106,7 @@ func executionPolicyRules(k *paperclipv1alpha1.K8sExecutionSpec) []rbacv1.Policy
 			// subresource; without it, runs fail with a 403 after the Job
 			// is created (found in live multi-replica verification).
 			Resources: []string{"jobs", "jobs/status"},
-			Verbs:     []string{"get", "list", "create", "delete"},
+			Verbs:     []string{"get", "list", rbacVerbCreate, rbacVerbDelete},
 		},
 	}
 
@@ -118,7 +118,7 @@ func executionPolicyRules(k *paperclipv1alpha1.K8sExecutionSpec) []rbacv1.Policy
 		rules = append(rules, rbacv1.PolicyRule{
 			APIGroups: []string{"agents.x-k8s.io"},
 			Resources: []string{"sandboxes"},
-			Verbs:     []string{"get", "create", "delete"},
+			Verbs:     []string{"get", rbacVerbCreate, rbacVerbDelete},
 		})
 	}
 
@@ -128,7 +128,7 @@ func executionPolicyRules(k *paperclipv1alpha1.K8sExecutionSpec) []rbacv1.Policy
 		rules = append(rules, rbacv1.PolicyRule{
 			APIGroups: []string{"cilium.io"},
 			Resources: []string{"ciliumnetworkpolicies"},
-			Verbs:     []string{"get", "create"},
+			Verbs:     []string{"get", rbacVerbCreate},
 		})
 	}
 
@@ -180,7 +180,7 @@ func BuildExecutionClusterRoleBinding(instance *paperclipv1alpha1.Instance) *rba
 			Labels: Labels(instance),
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
+			APIGroup: rbacAPIGroup,
 			Kind:     "ClusterRole",
 			Name:     ExecutionClusterRoleName(instance),
 		},

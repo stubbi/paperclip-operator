@@ -23,12 +23,12 @@ func sandboxBaseRules() []rbacv1.PolicyRule {
 		{
 			APIGroups: []string{""},
 			Resources: []string{"pods"},
-			Verbs:     []string{"create", "get", "list", "watch", "delete", "patch"},
+			Verbs:     []string{rbacVerbCreate, "get", "list", "watch", rbacVerbDelete, rbacVerbPatch},
 		},
 		{
 			APIGroups: []string{""},
 			Resources: []string{"pods/exec"},
-			Verbs:     []string{"create", "get"},
+			Verbs:     []string{rbacVerbCreate, "get"},
 		},
 		{
 			APIGroups: []string{""},
@@ -38,7 +38,7 @@ func sandboxBaseRules() []rbacv1.PolicyRule {
 		{
 			APIGroups: []string{"networking.k8s.io"},
 			Resources: []string{"networkpolicies"},
-			Verbs:     []string{"create", "get", "update", "patch"},
+			Verbs:     []string{rbacVerbCreate, "get", "update", rbacVerbPatch},
 		},
 	}
 }
@@ -52,7 +52,7 @@ func BuildSandboxRole(instance *paperclipv1alpha1.Instance, namespace string) *r
 		rules = append(rules, rbacv1.PolicyRule{
 			APIGroups: []string{""},
 			Resources: []string{"persistentvolumeclaims"},
-			Verbs:     []string{"create", "get", "list", "delete"},
+			Verbs:     []string{rbacVerbCreate, "get", "list", rbacVerbDelete},
 		})
 	}
 
@@ -76,7 +76,7 @@ func BuildSandboxClusterRole(instance *paperclipv1alpha1.Instance) *rbacv1.Clust
 		rules = append(rules, rbacv1.PolicyRule{
 			APIGroups: []string{""},
 			Resources: []string{"persistentvolumeclaims"},
-			Verbs:     []string{"create", "get", "list", "delete"},
+			Verbs:     []string{rbacVerbCreate, "get", "list", rbacVerbDelete},
 		})
 	}
 
@@ -85,17 +85,17 @@ func BuildSandboxClusterRole(instance *paperclipv1alpha1.Instance) *rbacv1.Clust
 		rbacv1.PolicyRule{
 			APIGroups: []string{""},
 			Resources: []string{"namespaces"},
-			Verbs:     []string{"create", "get", "list", "delete"},
+			Verbs:     []string{rbacVerbCreate, "get", "list", rbacVerbDelete},
 		},
 		rbacv1.PolicyRule{
 			APIGroups: []string{""},
 			Resources: []string{"services", "serviceaccounts"},
-			Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
+			Verbs:     []string{"get", "list", "watch", rbacVerbCreate, "update", rbacVerbPatch, rbacVerbDelete},
 		},
 		rbacv1.PolicyRule{
-			APIGroups: []string{"rbac.authorization.k8s.io"},
+			APIGroups: []string{rbacAPIGroup},
 			Resources: []string{"roles", "rolebindings"},
-			Verbs:     []string{"get", "list", "create", "update", "patch", "delete"},
+			Verbs:     []string{"get", "list", rbacVerbCreate, "update", rbacVerbPatch, rbacVerbDelete},
 		},
 	)
 
@@ -116,7 +116,7 @@ func BuildSandboxClusterRoleBinding(instance *paperclipv1alpha1.Instance) *rbacv
 			Labels: Labels(instance),
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
+			APIGroup: rbacAPIGroup,
 			Kind:     "ClusterRole",
 			Name:     SandboxClusterRoleName(instance),
 		},
@@ -139,7 +139,7 @@ func BuildSandboxRoleBinding(instance *paperclipv1alpha1.Instance, namespace str
 			Labels:    Labels(instance),
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
+			APIGroup: rbacAPIGroup,
 			Kind:     "Role",
 			Name:     SandboxRoleName(instance),
 		},

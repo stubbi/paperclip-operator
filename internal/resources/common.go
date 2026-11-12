@@ -92,6 +92,18 @@ const (
 	DefaultServerDrainTimeoutSeconds int64 = 15
 )
 
+const (
+	shellExecutable       = "/bin/sh"
+	envDatabaseURL        = "DATABASE_URL"
+	databasePasswordKey   = "password"
+	envAWSAccessKeyID     = "AWS_ACCESS_KEY_ID"
+	envAWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY" // #nosec G101 -- environment and Secret key name, not a credential //nolint:gosec
+	rbacVerbCreate        = "create"
+	rbacVerbDelete        = "delete"
+	rbacVerbPatch         = "patch"
+	rbacAPIGroup          = "rbac.authorization.k8s.io"
+)
+
 // Ptr returns a pointer to the given value.
 func Ptr[T any](v T) *T {
 	return &v
@@ -264,7 +276,7 @@ func buildServerLifecycle(instance *paperclipv1alpha1.Instance) *corev1.Lifecycl
 	return &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{
-				Command: []string{"/bin/sh", "-c", fmt.Sprintf("sleep %d", timeout)},
+				Command: []string{shellExecutable, "-c", fmt.Sprintf("sleep %d", timeout)},
 			},
 		},
 	}

@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: '1.25'
+  GO_VERSION: '1.27.4'
   REGISTRY: ghcr.io
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.11.4
+          version: v2.15.0
           args: --timeout=5m
 
   reconcile-guard:
@@ -99,6 +99,18 @@ jobs:
           files: ./cover.out
           fail_ci_if_error: false
 
+  test-minimum-go:
+    name: Test (Go 1.25 compatibility)
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: make test
+
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -123,7 +135,7 @@ jobs:
 
   build:
     name: Build
-    needs: [lint, test, security-scan]
+    needs: [lint, test, test-minimum-go, security-scan]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -172,7 +184,7 @@ jobs:
 
   e2e:
     name: E2E Tests
-    needs: [lint, test, security-scan]
+    needs: [lint, test, test-minimum-go, security-scan]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

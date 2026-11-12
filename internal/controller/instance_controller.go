@@ -227,7 +227,8 @@ func (r *InstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if err := r.Update(ctx, instance); err != nil { // reconcile-guard:allow
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		// Preserve the rate-limited retry after adding the finalizer.
+		return ctrl.Result{Requeue: true}, nil //nolint:staticcheck // RequeueAfter changes the retry's rate-limiting semantics.
 	}
 
 	// Set initial phase
@@ -1635,7 +1636,6 @@ func (r *InstanceReconciler) setPhase(_ context.Context, instance *paperclipv1al
 	instance.Status.Phase = phase
 }
 
-//nolint:unparam // return signature matches controller-runtime convention
 func (r *InstanceReconciler) handleError(ctx context.Context, instance *paperclipv1alpha1.Instance, resource string, err error) (ctrl.Result, error) {
 	log := logf.FromContext(ctx)
 	log.Error(err, "Failed to reconcile resource", "resource", resource)
