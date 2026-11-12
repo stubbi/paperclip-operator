@@ -167,7 +167,7 @@ echo "Backup completed successfully."
 									Name:            "pg-dump",
 									Image:           pgDumpImage(instance),
 									ImagePullPolicy: corev1.PullIfNotPresent,
-									Command:         []string{"/bin/sh", "-c"},
+									Command:         []string{shellExecutable, "-c"},
 									Args: []string{
 										`set -e; echo "Running pg_dump..."; pg_dump "${DATABASE_URL}" | gzip > /backup/dump.sql.gz; echo "pg_dump complete."`,
 									},
@@ -182,7 +182,7 @@ echo "Backup completed successfully."
 									Name:            "s3-upload",
 									Image:           "amazon/aws-cli:2.22.35",
 									ImagePullPolicy: corev1.PullIfNotPresent,
-									Command:         []string{"/bin/sh", "-c"},
+									Command:         []string{shellExecutable, "-c"},
 									Args:            []string{uploadScript},
 									SecurityContext: securityContext,
 									Env:             buildBackupS3EnvVars(instance),
@@ -238,13 +238,13 @@ func buildBackupDBEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar 
 	case ModeExternal:
 		if instance.Spec.Database.ExternalURLSecretRef != nil {
 			vars = append(vars, corev1.EnvVar{
-				Name: "DATABASE_URL",
+				Name: envDatabaseURL,
 				ValueFrom: &corev1.EnvVarSource{
 					SecretKeyRef: instance.Spec.Database.ExternalURLSecretRef,
 				},
 			})
 		} else if instance.Spec.Database.ExternalURL != "" {
-			vars = append(vars, corev1.EnvVar{Name: "DATABASE_URL", Value: instance.Spec.Database.ExternalURL})
+			vars = append(vars, corev1.EnvVar{Name: envDatabaseURL, Value: instance.Spec.Database.ExternalURL})
 		}
 	default: // managed
 		// DB_PASSWORD must be defined before DATABASE_URL for $(DB_PASSWORD) substitution.
@@ -255,12 +255,12 @@ func buildBackupDBEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar 
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: DatabaseSecretName(instance),
 					},
-					Key: "password",
+					Key: databasePasswordKey,
 				},
 			},
 		})
 		vars = append(vars, corev1.EnvVar{
-			Name: "DATABASE_URL",
+			Name: envDatabaseURL,
 			Value: fmt.Sprintf("postgresql://paperclip:$(DB_PASSWORD)@%s-db.%s.svc.cluster.local:%d/paperclip",
 				instance.Name, instance.Namespace, PostgreSQLPort),
 		})
@@ -277,20 +277,20 @@ func buildBackupS3EnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar 
 	if credSecret != nil {
 		vars = append(vars,
 			corev1.EnvVar{
-				Name: "AWS_ACCESS_KEY_ID",
+				Name: envAWSAccessKeyID,
 				ValueFrom: &corev1.EnvVarSource{
 					SecretKeyRef: &corev1.SecretKeySelector{
 						LocalObjectReference: *credSecret,
-						Key:                  "AWS_ACCESS_KEY_ID",
+						Key:                  envAWSAccessKeyID,
 					},
 				},
 			},
 			corev1.EnvVar{
-				Name: "AWS_SECRET_ACCESS_KEY",
+				Name: envAWSSecretAccessKey,
 				ValueFrom: &corev1.EnvVarSource{
 					SecretKeyRef: &corev1.SecretKeySelector{
 						LocalObjectReference: *credSecret,
-						Key:                  "AWS_SECRET_ACCESS_KEY",
+						Key:                  envAWSSecretAccessKey,
 					},
 				},
 			},

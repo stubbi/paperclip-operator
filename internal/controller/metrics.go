@@ -21,13 +21,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
+const instanceMetricLabel = "instance"
+
 var (
 	reconcileTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "paperclip_reconcile_total",
 			Help: "Total number of reconciliations per instance",
 		},
-		[]string{"instance", "namespace", "result"},
+		[]string{instanceMetricLabel, "namespace", "result"},
 	)
 
 	reconcileDuration = prometheus.NewHistogramVec(
@@ -36,7 +38,7 @@ var (
 			Help:    "Duration of reconciliation in seconds",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{"instance", "namespace"},
+		[]string{instanceMetricLabel, "namespace"},
 	)
 
 	instancePhase = prometheus.NewGaugeVec(
@@ -44,7 +46,7 @@ var (
 			Name: "paperclip_instance_phase",
 			Help: "Current phase of a Paperclip instance (1 = active for given phase)",
 		},
-		[]string{"instance", "namespace", "phase"},
+		[]string{instanceMetricLabel, "namespace", "phase"},
 	)
 
 	resourceCreationFailures = prometheus.NewCounterVec(
@@ -52,7 +54,7 @@ var (
 			Name: "paperclip_resource_creation_failures_total",
 			Help: "Total number of resource creation failures",
 		},
-		[]string{"instance", "namespace", "resource"},
+		[]string{instanceMetricLabel, "namespace", "resource"},
 	)
 
 	managedInstances = prometheus.NewGauge(
@@ -67,7 +69,7 @@ var (
 			Name: "paperclip_instance_info",
 			Help: "Information about a Paperclip instance (always 1, use for PromQL joins)",
 		},
-		[]string{"instance", "namespace", "version", "image"},
+		[]string{instanceMetricLabel, "namespace", "version", "image"},
 	)
 
 	instanceReady = prometheus.NewGaugeVec(
@@ -75,7 +77,7 @@ var (
 			Name: "paperclip_instance_ready",
 			Help: "Whether the Paperclip instance pod is ready (1=ready, 0=not ready)",
 		},
-		[]string{"instance", "namespace"},
+		[]string{instanceMetricLabel, "namespace"},
 	)
 )
 

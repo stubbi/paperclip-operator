@@ -25,7 +25,11 @@ import (
 	paperclipv1alpha1 "github.com/paperclipinc/paperclip-operator/api/v1alpha1"
 )
 
-const defaultGrafanaFolder = "Paperclip"
+const (
+	defaultGrafanaFolder        = "Paperclip"
+	grafanaDatasourcePrometheus = "prometheus"
+	grafanaTableType            = "table"
+)
 
 // GrafanaDashboardOperatorName returns the name of the operator overview dashboard ConfigMap.
 func GrafanaDashboardOperatorName(instance *paperclipv1alpha1.Instance) string {
@@ -158,7 +162,7 @@ type grafanaDatasource struct {
 }
 
 func dsVar() *grafanaDatasource {
-	return &grafanaDatasource{Type: "prometheus", UID: "${datasource}"}
+	return &grafanaDatasource{Type: grafanaDatasourcePrometheus, UID: "${datasource}"}
 }
 
 func datasourceVar() grafanaVariable {
@@ -168,7 +172,7 @@ func datasourceVar() grafanaVariable {
 		Label:   "Datasource",
 		Name:    "datasource",
 		Options: []interface{}{},
-		Query:   "prometheus",
+		Query:   grafanaDatasourcePrometheus,
 		Refresh: 1,
 		Type:    "datasource",
 	}
@@ -188,7 +192,7 @@ func namespaceVar(multi bool) grafanaVariable {
 		Refresh:    2,
 		Type:       "query",
 		Sort:       1,
-		Datasource: map[string]interface{}{"type": "prometheus", "uid": "${datasource}"},
+		Datasource: map[string]interface{}{"type": grafanaDatasourcePrometheus, "uid": "${datasource}"},
 	}
 }
 
@@ -206,7 +210,7 @@ func instanceVar(multi bool) grafanaVariable {
 		Refresh:    2,
 		Type:       "query",
 		Sort:       1,
-		Datasource: map[string]interface{}{"type": "prometheus", "uid": "${datasource}"},
+		Datasource: map[string]interface{}{"type": grafanaDatasourcePrometheus, "uid": "${datasource}"},
 	}
 	if multi {
 		v.AllValue = ".*"
@@ -272,7 +276,7 @@ func tablePanel(id int, title string, targets []grafanaTarget, pos grafanaGridPo
 	return grafanaPanel{
 		ID:          id,
 		Title:       title,
-		Type:        "table",
+		Type:        grafanaTableType,
 		GridPos:     pos,
 		Targets:     targets,
 		Datasource:  dsVar(),
@@ -312,7 +316,7 @@ func buildOperatorDashboard() string {
 		Editable:      true,
 		GraphTooltip:  1,
 		SchemaVersion: 39,
-		Tags:          []string{"paperclip", "operator"},
+		Tags:          []string{AppName, "operator"},
 		Time:          grafanaTime{From: "now-1h", To: "now"},
 		Refresh:       "30s",
 		Title:         "Paperclip Operator",
@@ -355,9 +359,9 @@ func buildOperatorPanels() []grafanaPanel {
 		rowPanel(102, "Instance Fleet", 14, false, nil),
 		tablePanel(7, "Instance Table",
 			[]grafanaTarget{
-				{Expr: `paperclip_instance_info{namespace=~"$namespace",instance=~"$instance"}`, LegendFormat: "", RefID: "A", Instant: true, Format: "table"},
-				{Expr: `paperclip_instance_phase{namespace=~"$namespace",instance=~"$instance"} == 1`, LegendFormat: "", RefID: "B", Instant: true, Format: "table"},
-				{Expr: `paperclip_instance_ready{namespace=~"$namespace",instance=~"$instance"}`, LegendFormat: "", RefID: "C", Instant: true, Format: "table"},
+				{Expr: `paperclip_instance_info{namespace=~"$namespace",instance=~"$instance"}`, LegendFormat: "", RefID: "A", Instant: true, Format: grafanaTableType},
+				{Expr: `paperclip_instance_phase{namespace=~"$namespace",instance=~"$instance"} == 1`, LegendFormat: "", RefID: "B", Instant: true, Format: grafanaTableType},
+				{Expr: `paperclip_instance_ready{namespace=~"$namespace",instance=~"$instance"}`, LegendFormat: "", RefID: "C", Instant: true, Format: grafanaTableType},
 			}, gp(8, 24, 0, 15)),
 
 		rowPanel(103, "Workqueue", 23, true, []grafanaPanel{
@@ -382,7 +386,7 @@ func buildInstanceDashboard() string {
 		Editable:      true,
 		GraphTooltip:  1,
 		SchemaVersion: 39,
-		Tags:          []string{"paperclip", "instance"},
+		Tags:          []string{AppName, "instance"},
 		Time:          grafanaTime{From: "now-1h", To: "now"},
 		Refresh:       "30s",
 		Title:         "Paperclip Instance",

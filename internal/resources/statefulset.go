@@ -80,7 +80,7 @@ func buildMainContainer(instance *paperclipv1alpha1.Instance) corev1.Container {
 	// fails under our runAsNonRoot / runAsUser:1000 / drop-ALL securityContext
 	// ("failed switching to node: operation not permitted"). We already run as the
 	// node uid, so there is nothing to drop to.
-	container.Command = []string{"/bin/sh", "-c"}
+	container.Command = []string{shellExecutable, "-c"}
 	script := "exec " + DefaultPaperclipEntrypoint
 	// Multi-replica heartbeat gating: only pod-0 runs the scheduler. Uses a shell
 	// wrapper that checks the StatefulSet ordinal in $HOSTNAME. Applied only for
@@ -150,13 +150,13 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 	case ModeExternal:
 		if instance.Spec.Database.ExternalURLSecretRef != nil {
 			vars = append(vars, corev1.EnvVar{
-				Name: "DATABASE_URL",
+				Name: envDatabaseURL,
 				ValueFrom: &corev1.EnvVarSource{
 					SecretKeyRef: instance.Spec.Database.ExternalURLSecretRef,
 				},
 			})
 		} else if instance.Spec.Database.ExternalURL != "" {
-			vars = append(vars, corev1.EnvVar{Name: "DATABASE_URL", Value: instance.Spec.Database.ExternalURL})
+			vars = append(vars, corev1.EnvVar{Name: envDatabaseURL, Value: instance.Spec.Database.ExternalURL})
 		}
 	case "managed":
 		// DB_PASSWORD must be defined before DATABASE_URL for $(DB_PASSWORD) substitution to work
@@ -167,12 +167,12 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: DatabaseSecretName(instance),
 					},
-					Key: "password",
+					Key: databasePasswordKey,
 				},
 			},
 		})
 		vars = append(vars, corev1.EnvVar{
-			Name: "DATABASE_URL",
+			Name: envDatabaseURL,
 			Value: fmt.Sprintf("postgresql://paperclip:$(DB_PASSWORD)@%s-db.%s.svc.cluster.local:%d/paperclip",
 				instance.Name, instance.Namespace, PostgreSQLPort),
 		})
@@ -270,20 +270,20 @@ func buildEnvVars(instance *paperclipv1alpha1.Instance) []corev1.EnvVar {
 		if os.CredentialsSecretRef != nil {
 			vars = append(vars,
 				corev1.EnvVar{
-					Name: "AWS_ACCESS_KEY_ID",
+					Name: envAWSAccessKeyID,
 					ValueFrom: &corev1.EnvVarSource{
 						SecretKeyRef: &corev1.SecretKeySelector{
 							LocalObjectReference: *os.CredentialsSecretRef,
-							Key:                  "AWS_ACCESS_KEY_ID",
+							Key:                  envAWSAccessKeyID,
 						},
 					},
 				},
 				corev1.EnvVar{
-					Name: "AWS_SECRET_ACCESS_KEY",
+					Name: envAWSSecretAccessKey,
 					ValueFrom: &corev1.EnvVarSource{
 						SecretKeyRef: &corev1.SecretKeySelector{
 							LocalObjectReference: *os.CredentialsSecretRef,
-							Key:                  "AWS_SECRET_ACCESS_KEY",
+							Key:                  envAWSSecretAccessKey,
 						},
 					},
 				},
@@ -921,7 +921,7 @@ exit 1
 		Name:            "onboard",
 		Image:           image,
 		ImagePullPolicy: imagePullPolicy(instance),
-		Command:         []string{"/bin/sh", "-c"},
+		Command:         []string{shellExecutable, "-c"},
 		Args:            []string{script},
 		Env:             buildEnvVars(instance),
 		EnvFrom:         instance.Spec.EnvFrom,
@@ -958,7 +958,7 @@ func buildSeedInstanceAdminInitContainer(instance *paperclipv1alpha1.Instance) c
 		Name:            "seed-instance-admin",
 		Image:           image,
 		ImagePullPolicy: imagePullPolicy(instance),
-		Command:         []string{"/bin/sh", "-c"},
+		Command:         []string{shellExecutable, "-c"},
 		Args:            []string{"exec pnpm paperclipai auth seed-instance-admin"},
 		Env:             env,
 		EnvFrom:         instance.Spec.EnvFrom,

@@ -35,8 +35,8 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 			},
 		},
 		Env: []corev1.EnvVar{
-			{Name: "POSTGRES_DB", Value: "paperclip"},
-			{Name: "POSTGRES_USER", Value: "paperclip"},
+			{Name: "POSTGRES_DB", Value: AppName},
+			{Name: "POSTGRES_USER", Value: AppName},
 			{
 				Name: "POSTGRES_PASSWORD",
 				ValueFrom: &corev1.EnvVarSource{
@@ -44,7 +44,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: DatabaseSecretName(instance),
 						},
-						Key: "password",
+						Key: databasePasswordKey,
 					},
 				},
 			},
@@ -55,7 +55,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 		Lifecycle: &corev1.Lifecycle{
 			PreStop: &corev1.LifecycleHandler{
 				Exec: &corev1.ExecAction{
-					Command: []string{"/bin/sh", "-c", "pg_ctl stop -m fast -D $PGDATA"},
+					Command: []string{shellExecutable, "-c", "pg_ctl stop -m fast -D $PGDATA"},
 				},
 			},
 		},
@@ -71,7 +71,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 		LivenessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				Exec: &corev1.ExecAction{
-					Command: []string{"pg_isready", "-U", "paperclip"},
+					Command: []string{"pg_isready", "-U", AppName},
 				},
 			},
 			InitialDelaySeconds: 15,
@@ -83,7 +83,7 @@ func BuildDatabaseStatefulSet(instance *paperclipv1alpha1.Instance) *appsv1.Stat
 		ReadinessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				Exec: &corev1.ExecAction{
-					Command: []string{"pg_isready", "-U", "paperclip"},
+					Command: []string{"pg_isready", "-U", AppName},
 				},
 			},
 			InitialDelaySeconds: 5,
@@ -182,7 +182,7 @@ func BuildDatabaseSecret(instance *paperclipv1alpha1.Instance, password string) 
 		ObjectMeta: ObjectMeta(instance, DatabaseSecretName(instance)),
 		Type:       corev1.SecretTypeOpaque,
 		StringData: map[string]string{
-			"password": password,
+			databasePasswordKey: password,
 		},
 	}
 }

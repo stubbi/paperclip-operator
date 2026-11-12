@@ -298,7 +298,7 @@ echo "Admin bootstrap finished successfully."
 							Name:            "bootstrap",
 							Image:           image,
 							ImagePullPolicy: imagePullPolicy(instance),
-							Command:         []string{"/bin/sh", "-c"},
+							Command:         []string{shellExecutable, "-c"},
 							Args:            []string{script},
 							SecurityContext: paperclipContainerSecurityContext(instance),
 							Env: append(buildEnvVars(instance),
