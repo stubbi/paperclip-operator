@@ -12,7 +12,7 @@ Go-based Kubernetes operator for managing Paperclip instances (the open-source A
 
 - `RELEASE_PLEASE_TOKEN` (secret): PAT used by release-please and to publish the drafted release.
 - `IMAGE_NAMESPACE` (variable, default `stubbi`): GHCR namespace for the image and the OCI chart. `release.yaml` fails early unless it matches `image.repository` in `charts/paperclip-operator/values.yaml`; change both together.
-- Keep the v0.19.1 chart defaults in `paperclipinc`. The `stubbi` namespace switch belongs with the v0.19.2 release version bump, so pipeline-only changes do not point current installs at an unpublished tag.
+- The v0.19.2 chart defaults use `stubbi` together with the version bump. Published versions up to v0.19.1 retain `paperclipinc`; keep the namespace and version coherent when preparing releases.
 - `GHCR_PUSH_TOKEN` (secret) + `GHCR_PUSH_USER` (variable): only needed to push into a namespace the repository owner does not own (e.g. `paperclipinc`). `GITHUB_TOKEN` is the fallback.
 
 ## Commands

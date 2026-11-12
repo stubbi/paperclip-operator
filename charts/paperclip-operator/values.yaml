@@ -3,7 +3,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/paperclipinc/paperclip-operator
+  repository: ghcr.io/stubbi/paperclip-operator
   pullPolicy: IfNotPresent
   tag: ""  # Defaults to appVersion
 
