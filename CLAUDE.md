@@ -5,7 +5,7 @@
 Go-based Kubernetes operator for managing Paperclip instances (the open-source AI agent orchestration platform), built with controller-runtime (kubebuilder). CRD API group is `paperclip.ai`, version `v1alpha1`.
 
 - **Module:** `github.com/paperclipinc/paperclip-operator`
-- **Go version:** 1.25
+- **Go version:** 1.25 minimum; 1.27.4 for CI, container builds, and releases
 - **GitHub:** `stubbi/paperclip-operator` (moved from `paperclipinc`; releases from v0.19.2 publish to `ghcr.io/stubbi`, older ones stay at `ghcr.io/paperclipinc`)
 
 ### Release credentials
@@ -163,7 +163,7 @@ All checks run on every push to main and every PR:
 | Job | What it does |
 |-----|-------------|
 | **Lint** | golangci-lint v2.1.0 |
-| **Test** | `make test` (unit + envtest integration) |
+| **Test** | `make test` (unit + envtest integration) on Go 1.27.4, with a separate Go 1.25 compatibility job |
 | **Security Scan** | gosec + Trivy (CRITICAL/HIGH) |
 | **Reconcile Guard** | Grep check preventing bare `r.Update()` on managed resources |
 | **Helm RBAC Sync** | Verifies Helm chart ClusterRole contains all kubebuilder RBAC permissions |
