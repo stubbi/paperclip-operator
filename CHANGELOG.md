@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.19.2](https://github.com/stubbi/paperclip-operator/compare/v0.19.1...v0.19.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **bootstrap:** let adminUser bootstrap work with auth.disableSignUp ([#124](https://github.com/stubbi/paperclip-operator/issues/124)) ([80b7966](https://github.com/stubbi/paperclip-operator/commit/80b79668ef724f1fb3adef86d67f01d0fe0bc483)), closes [#120](https://github.com/stubbi/paperclip-operator/issues/120)
+* **bootstrap:** stop mounting the instance data volume on the bootstrap Job ([#118](https://github.com/stubbi/paperclip-operator/issues/118)) ([a96b2ac](https://github.com/stubbi/paperclip-operator/commit/a96b2acd25c801fdea9fe4584fdec031aba8a5b1))
+* **deps:** build and release with patched Go 1.27.4 ([#134](https://github.com/stubbi/paperclip-operator/issues/134)) ([2473e0f](https://github.com/stubbi/paperclip-operator/commit/2473e0f4de3d5627e120c54c4d1cb2fbfaaad006))
+* **helm:** grant leader election permissions ([#127](https://github.com/stubbi/paperclip-operator/issues/127)) ([dba12c8](https://github.com/stubbi/paperclip-operator/commit/dba12c8566898dc4cf3298181352ac8602cecf03))
+* preserve signing verification failures ([#133](https://github.com/stubbi/paperclip-operator/issues/133)) ([16e5ed5](https://github.com/stubbi/paperclip-operator/commit/16e5ed5018af888f59e14487e3ce26fb00fde829))
+
 ## [0.19.1](https://github.com/paperclipinc/paperclip-operator/compare/v0.19.0...v0.19.1) (2026-09-06)
 
 
