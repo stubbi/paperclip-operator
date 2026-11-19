@@ -181,7 +181,7 @@ func BuildNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.Netw
 }
 
 // BuildDatabaseNetworkPolicy constructs a NetworkPolicy restricting ingress to the managed database.
-// Only allows traffic from Paperclip server pods on the PostgreSQL port.
+// Only allows traffic from Paperclip server, bootstrap, and backup pods on the PostgreSQL port.
 func BuildDatabaseNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: ObjectMeta(instance, instance.Name+"-db"),
@@ -199,6 +199,16 @@ func BuildDatabaseNetworkPolicy(instance *paperclipv1alpha1.Instance) *networkin
 						{
 							PodSelector: &metav1.LabelSelector{
 								MatchLabels: SelectorLabels(instance),
+							},
+						},
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: LabelsWithComponent(instance, "bootstrap"),
+							},
+						},
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: LabelsWithComponent(instance, "backup"),
 							},
 						},
 					},
